@@ -25,7 +25,25 @@ dat <- read_csv(here("data", "cleaned_ML.csv"), na = c("", "NA"))
 names(dat) 
 str(dat) 
 
-# phylo tree
+# deleting unusable rows #####
+
+dat %>% filter(is.na(Treatment_lifespan_variable) == FALSE) -> dat1
+
+# separating two kinds
+
+groups <- str_detect(dat1$Lifespan_parameter, "Me")
+
+# longevity
+# this needs more work here
+# SEM, Probable error???, SD, CI, Interquartile range
+# pobably easier to calcuate by hand
+dat_long <- dat1[groups == TRUE, ]
+
+# I think we assume - binomial error
+# then this will be all fine...
+dat_surv <- dat1[groups == FALSE, ]
+
+# phylo tree ####
 myspecies <- as.character(unique(dat$Species_Latin)) #get list of species
 length(myspecies) #14 species
 str_sort(myspecies) #visual check
