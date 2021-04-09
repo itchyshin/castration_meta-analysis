@@ -15,16 +15,18 @@ pacman::p_load(tidyverse,
                lme4,
                readxl,
                metaAidR,
-               rotl
+               rotl,
+               orchaRd,
+               emmeans
 )
 
-# function for getting d for propotional data
+# function for getting d for proportional data
 
 smdp <- function(m1, m2, n1, n2) {
   mean_diff <- (car::logit(m1) - car::logit(m2))
   j_cor <- 1 - (3 /(4*(n1 + n2) -9))
-  smd <- mean_diff/(pi/sqrt(3))*j_cor
-  var <- ((n1 + n2)/(n1*n2) + smd^2/(2*(n1 + n2)))*(j_cor^2)
+  smd <- (mean_diff/(pi/sqrt(3)))*j_cor
+  var <- ((n1 + n2)/(n1*n2) + (smd^2)/(2*(n1 + n2)))*(j_cor^2)
   invisible(data.frame(yi = smd , vi = var))
 }
 
@@ -33,52 +35,100 @@ d_to_lnor <- function(smd){
   return(lnor)
 } 
 
+# funciont for getting d for traditional data
+
+smdm <- function(m1, m2, n1, n2, sd1, sd2) {
+  mean_diff <- m1 - m2
+  sd_pool <- sqrt( ((n1 - 1)*sd1^2 + (n2 - 1)*sd2) / (n1 + n2 - 2) )
+  j_cor <- 1 - (3 /(4*(n1 + n2) -9))
+  smd <- (mean_diff/sd_pool)*j_cor
+  var <- ((n1 + n2)/(n1*n2) + (smd^2)/(2*(n1 + n2)))*(j_cor^2)
+  invisible(data.frame(yi = smd , vi = var))
+}
+
+d_to_lnor <- function(smd){
+  lnor <- smd * (sqrt(3)/pi)
+  return(lnor)
+} 
+
+lnor_to_d <- function(lnor){
+  smd <- lnor*(pi/sqrt(3))
+}
 # invisible
 
 # loading data ####
 
-dat <- read_csv(here("data", "cleaned_ML.csv"), na = c("", "NA")) 
+dat_full <- read_csv(here("data", "dat_09042020.csv"), na = c("", "NA")) 
 
-names(dat) 
-str(dat) 
+#names(dat_full) 
+#str(dat_full) 
 
 # deleting unusable rows #####
 
-dat %>% filter(is.na(Treatment_lifespan_variable) == FALSE) -> dat1
+dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) -> dat
 
+dim(dat)
+dim(dat_full)
 # separating two kinds
 
-groups <- str_detect(dat1$Lifespan_parameter, "Me")
+effect_type <- str_detect(dat$Lifespan_parameter, "Me")
+
+# creating effect sizes
+dat$yi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
+
+dat$vi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
+
+# effect-level ID
+
+dat$Effect_ID <- 1:nrow(dat)
+
+# shared control 
+
+
+
+# phylogeny
+
+
+
+# meta-analysis basics
+
+mod <-  rma.mv(yi, V = vi, mod = ~ 1, random = list(~1|Study, ~1|Effect_ID), data = dat, test = "t")
+summary(mod) 
+
+i2_ml(mod)
+
+funnel(mod)
+
+mod1 <-  rma.mv(yi, V = vi, mod = ~ Sex-1, random = list(~1|Study, ~1|Effect_ID), data = dat, test = "t")
+summary(mod1) 
+
+r2_ml(mod1)
+
+orchard_plot(mod1, mod = "Sex", xlab = "Standairsed mean difference")
+
+# just at means of all continiosu variables (if we do not set anything)
+res <- qdrg(object = mod1, data = dat)
+
+# marginal means ; all groups are proportionally weighted
+emmeans(res, specs = ~1, df = mod1$dfs, weights = "prop") 
+emmeans(res, specs = "Sex", df = mod1$dfs, weights = "prop") 
+
+# we can run - some heteroscad models
+
+...
+
+#########################################
 
 # longevity
 # this needs more work here
 # SEM, Probable error???, SD, CI, Interquartile range
 # pobably easier to calcuate by hand
-dat_long <- dat1[groups == TRUE, ]
+dat_long <- dat[effect_type == TRUE, ]
 
 # I think we assume - binomial error
 # then this will be all fine...
-dat_surv <- as.data.frame(dat1[groups == FALSE, ])
+dat_surv <- as.data.frame(dat[effect_type == FALSE, ])
 
-######################################################################################
-######################################################################################
-# phylo tree ####
-myspecies <- as.character(unique(dat$Species_Latin)) #get list of species
-length(myspecies) #14 species
-str_sort(myspecies) #visual check
-taxa <- tnrs_match_names(names = myspecies) # using *rotl* package to retrieve synthetic species tree from Open Tree of Life
-dim(taxa) #14 species - all matched
-table(taxa$approximate_match) #0 approximate matches
-tree <- tol_induced_subtree(ott_ids = taxa[["ott_id"]], label_format = "name")  #retrieve the tree
-plot(tree, cex=.6, label.offset =.1, no.margin = TRUE) #good
-is.binary(tree) #no polytomies
-str(tree) 
-tree$tip.label <- gsub("_"," ", tree$tip.label) #get rid of the underscores from tree tip labels
-intersect(myspecies, tree$tip.label) #14 - perfect overlap and differences with myspecies list
-write.tree(tree, file="./data/tree_rotl.tre") #save the tree
-# tree <- read.tree(file="./data/tree_rotl.tre") #if you need to read in the tree
-######################################################################################
-######################################################################################
 
 #  getting effect size #### 
 
@@ -107,4 +157,22 @@ mod_surv2 <- rma.mv(yi, V = vi, mod = ~ Sex - 1, random = list(~1|Study, ~1|Effe
 summary(mod_surv2) 
 
 
-
+######################################################################################
+######################################################################################
+# phylo tree ####
+myspecies <- as.character(unique(dat$Species_Latin)) #get list of species
+length(myspecies) #14 species
+str_sort(myspecies) #visual check
+taxa <- tnrs_match_names(names = myspecies) # using *rotl* package to retrieve synthetic species tree from Open Tree of Life
+dim(taxa) #14 species - all matched
+table(taxa$approximate_match) #0 approximate matches
+tree <- tol_induced_subtree(ott_ids = taxa[["ott_id"]], label_format = "name")  #retrieve the tree
+plot(tree, cex=.6, label.offset =.1, no.margin = TRUE) #good
+is.binary(tree) #no polytomies
+str(tree) 
+tree$tip.label <- gsub("_"," ", tree$tip.label) #get rid of the underscores from tree tip labels
+intersect(myspecies, tree$tip.label) #14 - perfect overlap and differences with myspecies list
+write.tree(tree, file="./data/tree_rotl.tre") #save the tree
+# tree <- read.tree(file="./data/tree_rotl.tre") #if you need to read in the tree
+######################################################################################
+######################################################################################
