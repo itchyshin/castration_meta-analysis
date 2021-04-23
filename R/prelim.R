@@ -79,6 +79,10 @@ dat$yi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$
 
 dat$vi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
 
+dat$yi2 <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[1]])
+
+dat$vi2 <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[2]])
+
 # effect-level ID
 
 dat$Effect_ID <- 1:nrow(dat)
@@ -101,16 +105,27 @@ cor_tree <- vcv(tree, corr = TRUE)
 # phylo model
 mod <-  rma.mv(yi, V = V_matrix, mod = ~ 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(mod) 
+robust(mod, cluster = dat$Species_Latin)
 round(i2_ml(mod)*100, 2)
 
 funnel(mod)
+funnel (mod, yaxis="seinv")
 
 # alternative
 mod0 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
-robust(mod0)
+summary(mod0)
+robust(mod0, cluster = dat$Study)
+
+mod01 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID), data = dat, test = "t")
+summary(mod01)
+coef_test(mod01, vcov = "CR2", cluster = dat$Species_Latin)
+
+mod02 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list(~1|Study, ~1|Effect_ID), data = dat, test = "t")
+summary(mod02)
+coef_test(mod02, vcov = "CR2", cluster = dat$Study)
 
 # sex effect
-mod1 <-  rma.mv(yi, V = vi, mod = ~ Sex-1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+mod1 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(mod1) 
 
 r2_ml(mod1)
@@ -124,12 +139,45 @@ res <- qdrg(object = mod1, data = dat)
 emmeans(res, specs = ~1, df = mod1$dfs, weights = "prop") 
 emmeans(res, specs = "Sex", df = mod1$dfs, weights = "prop") 
 
-# type of effect size
-mod2 <-  rma.mv(yi, V = vi, mod = ~ Effect_type, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+#
+mod2 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex + Gonads_removed + Effect_type, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(mod2) 
 
-r2_ml(mod2)
+res2 <- qdrg(object = mod2, data = dat)
 
+# marginal means ; all groups are proportionally weighted
+emmeans(res2, specs = ~1, df = mod1$dfs, weights = "prop") 
+emmeans(res2, specs = "Sex", df = mod1$dfs, weights = "prop") 
+
+# Sex difference: new set of analyses #### 
+
+## recalculating - effect size
+
+# reudcting data
+
+dat <- dat[(is.na(dat$vi2) == FALSE), ]
+
+
+V_matrix <- impute_covariance_matrix(vi = dat$vi, cluster = dat$Shared_control, r = 0.5)
+
+# phylogeny
+tree <- drop.tip(tree, tree$tip.label[!(tree$tip.label %in% dat$Phylogeny)])
+
+tree <- compute.brlen(tree)
+cor_tree <- vcv(tree, corr = TRUE)
+
+###
+
+model <-  rma.mv(yi, V = V_matrix, mod = ~ 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(model) 
+round(i2_ml(model)*100,2)
+
+model2 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(model2) 
+
+orchard_plot(model2, mod = "Sex", xlab = "Standairsed mean difference")
+
+######## DO NOT RUN
 # we can run - some heteroscad models
 # this does not improve model
 mod_h <-  rma.mv(yi, V = vi, mod = ~ Sex-1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~Sex|Effect_ID), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = dat, test = "t")
