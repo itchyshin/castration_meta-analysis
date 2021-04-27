@@ -83,6 +83,10 @@ dat$yi2 <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat
 
 dat$vi2 <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[2]])
 
+dat$yi3 <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[1]])
+
+dat$vi3 <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[2]])
+
 # effect-level ID
 
 dat$Effect_ID <- 1:nrow(dat)
@@ -130,7 +134,9 @@ summary(mod1)
 
 r2_ml(mod1)
 
-orchard_plot(mod1, mod = "Sex", xlab = "Standairsed mean difference")
+res <- mod_results(mod1, "Sex")
+
+orchard_plot(mod1, mod = "Sex", xlab = "Standardised mean difference")
 
 # just at means of all continiosu variables (if we do not set anything)
 res <- qdrg(object = mod1, data = dat)
@@ -175,7 +181,7 @@ round(i2_ml(model)*100,2)
 model2 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(model2) 
 
-orchard_plot(model2, mod = "Sex", xlab = "Standairsed mean difference")
+orchard_plot(model2, mod = "Sex", xlab = "Standardised mean difference")
 
 ######## DO NOT RUN
 # we can run - some heteroscad models
