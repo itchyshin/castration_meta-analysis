@@ -42,52 +42,20 @@ pacman::p_load(tidyverse,
 
 
 
-# function for getting d for proportional data
-
-smdp <- function(m1, m2, n1, n2) {
-  mean_diff <- (car::logit(m1) - car::logit(m2))
-  j_cor <- 1 - (3 /(4*(n1 + n2) -9))
-  smd <- (mean_diff/(pi/sqrt(3)))*j_cor
-  var <- ((n1 + n2)/(n1*n2) + (smd^2)/(2*(n1 + n2)))*(j_cor^2)
-  invisible(data.frame(yi = smd , vi = var))
-}
-
-d_to_lnor <- function(smd){
-  lnor <- smd * (sqrt(3)/pi)
-  return(lnor)
-} 
-
-# funciont for getting d for traditional data
-
-smdm <- function(m1, m2, n1, n2, sd1, sd2) {
-  mean_diff <- m1 - m2
-  sd_pool <- sqrt( ((n1 - 1)*sd1^2 + (n2 - 1)*sd2) / (n1 + n2 - 2) )
-  j_cor <- 1 - (3 /(4*(n1 + n2) -9))
-  smd <- (mean_diff/sd_pool)*j_cor
-  var <- ((n1 + n2)/(n1*n2) + (smd^2)/(2*(n1 + n2)))*(j_cor^2)
-  invisible(data.frame(yi = smd , vi = var))
-}
-
-d_to_lnor <- function(smd){
-  lnor <- smd * (sqrt(3)/pi)
-  return(lnor)
-} 
-
-lnor_to_d <- function(lnor){
-  smd <- lnor*(pi/sqrt(3))
-}
-# invisible
 
 # loading data ####
 
 dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
 
+source(here("R","function.R"), chdir = TRUE)
+
 #names(dat_full) 
 #str(dat_full) 
 
 # deleting unusable rows #####
+# excluding Vasectomy 
+dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% filter(Type_of_sterilization != "Vasectomy") -> dat
 
-dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) -> dat
 
 dim(dat)
 dim(dat_full)
@@ -98,15 +66,28 @@ effect_type <- str_detect(dat$Lifespan_parameter, "Me")
 # creating effect sizes
 
 # yi = Treatment - Control
-dat$yi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
 
-dat$vi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
+#lnRR
+dat$yi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[1]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
+
+dat$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[2]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
 
 
-# yi2 = Control - Control (male - female or male - female)
-dat$yi2 <- ifelse(effect_type == TRUE, smdm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[1]], smdp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[1]])
+# SMD
+# dat$yi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
+# 
+# dat$vi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
 
-dat$vi2 <- ifelse(effect_type == TRUE, smdm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[2]], smdp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[2]])
+# lnRR
+
+dat$yi2 <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[1]], lnrrp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[1]])
+
+dat$vi2 <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[2]], lnrrp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[2]])
+# SMD
+# yi2 = Oppsite  - Control (male - female or male - female)
+# dat$yi2 <- ifelse(effect_type == TRUE, smdm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[1]], smdp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[1]])
+# 
+# dat$vi2 <- ifelse(effect_type == TRUE, smdm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[2]], smdp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[2]])
 
 # 
 # dat$yi3 <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[1]])
@@ -162,7 +143,30 @@ r2_ml(mod1)
 
 res <- mod_results(mod1, "Sex")
 
-orchard_plot(mod1, mod = "Sex", xlab = "Standardised mean difference")
+orchard_plot(mod1, mod = "Sex", xlab = "log response ratio (lnRR)")
+
+mod1b <-  rma.mv(yi, V = V_matrix, mod = ~ Sex, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(mod1b) 
+
+# exuding inflectional study
+
+dat2 <- dat[dat$Order_extracted != 87 & dat$Order_extracted != 88, ]
+V_matrix2 <- impute_covariance_matrix(vi = dat2$vi, cluster = dat2$Shared_control, r = 0.5)
+
+
+mod12 <-  rma.mv(yi, V = V_matrix2, mod = ~ Sex -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat2, test = "t")
+summary(mod12) 
+
+r2_ml(mod12)
+
+res <- mod_results(mod12, "Sex")
+
+orchard_plot(mod12, mod = "Sex", xlab = "log response ratio (lnRR)")
+
+# mod = age
+model4 <-  rma.mv(yi, V = V_matrix, mod = ~ 1 + Maturity_at_treatment_ordinal, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(model4) 
+regplot(model4)
 
 # just at means of all continiosu variables (if we do not set anything)
 res <- qdrg(object = mod1, data = dat)
@@ -181,6 +185,8 @@ res2 <- qdrg(object = mod2, data = dat)
 emmeans(res2, specs = ~1, df = mod1$ddf, weights = "prop") 
 emmeans(res2, specs = "Sex", df = mod1$ddf, weights = "prop") 
 
+
+#########################
 # Sex difference: new set of analyses #### 
 
 ## recalculating - effect size
@@ -222,6 +228,7 @@ summary(model3)
 # mod = age
 model4 <-  rma.mv(yi, V = V_matrix, mod = ~ 1 + Maturity_at_treatment_ordinal, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(model4) 
+regplot(model4)
 
 # sex d
 # male
@@ -232,6 +239,7 @@ V_matrix2 <- impute_covariance_matrix(vi = mdat$vi, cluster = mdat$Shared_contro
 sub1 <-  rma.mv(yi, V = V_matrix2, mod = ~ 1 + yi2, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = mdat, test = "t")
 summary(sub1) 
 regplot(sub1)
+robust(sub1, cluster = mdat$Species_Latin)
 
 qplot(yi2, yi, data = mdat)
 
@@ -243,6 +251,7 @@ V_matrix3 <- impute_covariance_matrix(vi = fdat$vi, cluster = fdat$Shared_contro
 sub2 <-  rma.mv(yi, V = V_matrix3, mod = ~ 1 + yi2, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = fdat, test = "t")
 summary(sub2) 
 regplot(sub2)
+robust(sub2, cluster = fdat$Species_Latin)
 qplot(yi2, yi, data = fdat)
 
 
