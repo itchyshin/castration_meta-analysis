@@ -32,11 +32,27 @@ lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
 }
 
 
-# function for getting lnVR for mean ddata
+# function for getting lnVR for mean data
 
+lnvrm <- function(n1, n2, sd1, sd2){
+  lnvr<-log(sd1 / sd2) + (1 / (2 * (n1 - 1))) - (1 / (2 * (n2 - 1))) 
+  var<- 1 / (2 * (n1 - 1)) + 1 / (2 * (n1 - 1)^2) + 
+    1 / (2 * (n2 - 1)) + 1 / (2 * (n2 - 1)^2)
+  
+  invisible(data.frame(yi = lnvr , vi = var))
+}
+# function for getting lnCVR for mean data
 
-# funciont for getting lnCVR for mean data
-
+lncvrm <- function(m1, m2, n1, n2, sd1, sd2){
+  yi<-log((sd1 / m1) / (sd2 / m2)) + (1 / (2 * (n1 - 1))) - (1 / (2 * (n2 - 1))) 
+  lncvr<-yi + 0.5 * (((sd2^2) / (n2 * m2^2)) - ((sd1^2) / (n1 * m1^2)))	
+  var<-sd1^2 / (n1 * m1^2) + sd1^4 / (2 * n1^2 * m1^4) +
+    1 / (2 * (n1 - 1)) + 1 / (2 * (n1 - 1)^2) + 
+    sd2^2 / (n2 * m2^2) + m2^4 / (2 * n2^2 * m2^4) +
+    1 / (2 * (n2 - 1)) + 1 / (2 * (n2 - 1)^2)
+  
+  invisible(data.frame(yi = lncvr , vi = var))
+}
 
 # function for getting d for proportional data
 

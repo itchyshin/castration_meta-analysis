@@ -5,21 +5,21 @@ rm(list = ls())
 # packages ####
 
 #ochaRd
-
-install.packages("devtools")
-install.packages("tidyverse")
-#install.packages("metafor")
-install.packages("patchwork")
-install.packages("R.rsp")
-
-devtools::install_github("daniel1noble/orchaRd", force = TRUE, build_vignettes = TRUE)
-remotes::install_github("rvlenth/emmeans", dependencies = TRUE, build_opts = "") 
-
-#emmeans
-remotes::install_github("rvlenth/emmeans", dependencies = TRUE, build_opts = "")
-# metafor
-install.packages("remotes")
-remotes::install_github("wviechtb/metafor")
+# 
+# install.packages("devtools")
+# install.packages("tidyverse")
+# #install.packages("metafor")
+# install.packages("patchwork")
+# install.packages("R.rsp")
+# 
+# devtools::install_github("daniel1noble/orchaRd", force = TRUE, build_vignettes = TRUE)
+# remotes::install_github("rvlenth/emmeans", dependencies = TRUE, build_opts = "") 
+# 
+# #emmeans
+# remotes::install_github("rvlenth/emmeans", dependencies = TRUE, build_opts = "")
+# # metafor
+# install.packages("remotes")
+# remotes::install_github("wviechtb/metafor")
 
 # loading
 pacman::p_load(tidyverse,
@@ -123,17 +123,17 @@ funnel(mod)
 funnel (mod, yaxis="seinv")
 
 # alternative
-mod0 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
-summary(mod0)
-robust(mod0, cluster = dat$Study)
-
-mod01 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID), data = dat, test = "t")
-summary(mod01)
-coef_test(mod01, vcov = "CR2", cluster = dat$Species_Latin)
-
-mod02 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list(~1|Study, ~1|Effect_ID), data = dat, test = "t")
-summary(mod02)
-coef_test(mod02, vcov = "CR2", cluster = dat$Study)
+# mod0 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+# summary(mod0)
+# robust(mod0, cluster = dat$Study)
+# 
+# mod01 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID), data = dat, test = "t")
+# summary(mod01)
+# coef_test(mod01, vcov = "CR2", cluster = dat$Species_Latin)
+# 
+# mod02 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list(~1|Study, ~1|Effect_ID), data = dat, test = "t")
+# summary(mod02)
+# coef_test(mod02, vcov = "CR2", cluster = dat$Study)
 
 # sex effect
 mod1 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
@@ -185,6 +185,12 @@ res2 <- qdrg(object = mod2, data = dat)
 emmeans(res2, specs = ~1, df = mod1$ddf, weights = "prop") 
 emmeans(res2, specs = "Sex", df = mod1$ddf, weights = "prop") 
 
+### Data set for means #####
+
+mdat <- dat %>% filter(Effect_type == TRUE)
+
+mdat$lncvr <- 
+mdat$lnvr
 
 #########################
 # Sex difference: new set of analyses #### 
