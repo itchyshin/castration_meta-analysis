@@ -5,7 +5,7 @@
 lnrrp <- function(m1, m2, n1, n2) {
   # arcsine transforamtion
   asin_trans <- function(p) { asin(sqrt(p)) }
-  # SD for arcsine distribution
+  # SD for arcsine distribution (see Wiki - https://en.wikipedia.org/wiki/Arcsine_distribution)
   sd1 <- sqrt(1/8)
   sd2 <- sqrt(1/8)
   # lnRR - with 2nd order correction

@@ -63,6 +63,18 @@ dim(dat_full)
 
 effect_type <- str_detect(dat$Lifespan_parameter, "Me")
 
+
+# effect-level ID
+
+dat$Effect_ID <- 1:nrow(dat)
+dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin,)
+dat$Effect_type <- effect_type
+
+
+# we create a longer data format
+
+datl <- dat
+
 # creating effect sizes
 
 # yi = Treatment - Control
@@ -73,16 +85,31 @@ dat$yi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat
 dat$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[2]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
 
 
+
 # SMD
 # dat$yi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
 # 
 # dat$vi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
 
+
 # lnRR
 
-dat$yi2 <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[1]], lnrrp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[1]])
+# here we create the ratio of M/F or F/M 
 
-dat$vi2 <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[2]], lnrrp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[2]])
+datl$yi <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, datl$Error_control_SD)[[1]], lnrrp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[1]])
+
+datl$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, datl$Error_control_SD)[[2]], lnrrp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[2]])
+
+dat_long <- rbind(dat, datl)
+
+# putt 2 new column
+
+dat_long$Obs <- factor(1:dim(dat_long)[[1]])
+dat_long$Comp_type <- as.factor(rep(c("one_neutured","both_normal"), each = dim(dat_long)[[1]]/2))
+
+
+
+
 # SMD
 # yi2 = Oppsite  - Control (male - female or male - female)
 # dat$yi2 <- ifelse(effect_type == TRUE, smdm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, dat$Error_control_SD)[[1]], smdp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[1]])
@@ -94,11 +121,7 @@ dat$vi2 <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable,
 # 
 # dat$vi3 <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[2]], smdp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[2]])
 
-# effect-level ID
 
-dat$Effect_ID <- 1:nrow(dat)
-dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin,)
-dat$Effect_type <- effect_type
 
 # shared control 
 # this does not seem to work
@@ -121,6 +144,13 @@ round(i2_ml(mod)*100, 2)
 
 funnel(mod)
 funnel (mod, yaxis="seinv")
+
+orchard_plot(mod, mod = "Int", xlab = "log response ratio (lnRR)")
+
+
+## species-wise funnel plot 
+
+
 
 # alternative
 # mod0 <-  rma.mv(yi, V = vi, mod = ~ 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
@@ -148,7 +178,8 @@ orchard_plot(mod1, mod = "Sex", xlab = "log response ratio (lnRR)")
 mod1b <-  rma.mv(yi, V = V_matrix, mod = ~ Sex, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(mod1b) 
 
-# exuding inflectional study
+
+# exuding influential study
 
 dat2 <- dat[dat$Order_extracted != 87 & dat$Order_extracted != 88, ]
 V_matrix2 <- impute_covariance_matrix(vi = dat2$vi, cluster = dat2$Shared_control, r = 0.5)
@@ -163,6 +194,20 @@ res <- mod_results(mod12, "Sex")
 
 orchard_plot(mod12, mod = "Sex", xlab = "log response ratio (lnRR)")
 
+
+# environment - there seems to be too many categories 
+# what to put together - can farm and outdoor encloure can be put togehter???
+
+mod3 <-  rma.mv(yi, V = V_matrix, mod = ~ Environment -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(mod3) 
+
+r2_ml(mod3)
+
+#res <- mod_results(mod1, "Environment")
+
+orchard_plot(mod3, mod = "Environment", xlab = "log response ratio (lnRR)")
+
+
 # mod = age
 model4 <-  rma.mv(yi, V = V_matrix, mod = ~ 1 + Maturity_at_treatment_ordinal, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(model4) 
@@ -172,26 +217,71 @@ regplot(model4)
 res <- qdrg(object = mod1, data = dat)
 
 # marginal means ; all groups are proportionally weighted
-emmeans(res, specs = ~1, df = mod1$dfs, weights = "prop") 
-emmeans(res, specs = "Sex", df = mod1$dfs, weights = "prop") 
+emmeans(res, specs = ~1, df = mod1$ddfs, weights = "prop") 
+emmeans(res, specs = "Sex", df = mod1$ddfs, weights = "prop") 
 
 #
-mod2 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex + Gonads_removed + Effect_type, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+dat$Maturity_scaled <- scale(dat$Maturity_at_treatment_ordinal)
+
+mod2 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex + Gonads_removed + Effect_type + Maturity_scaled, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(mod2) 
 
 res2 <- qdrg(object = mod2, data = dat)
+# 
+#marginal means ; all groups are proportionally weighted
+# emmeans(res2, specs = ~1, df = mod1$ddf, weights = "prop") 
+emmeans(res2, specs = "Gonads_removed", df = mod2$ddf[[1]], weights = "prop") 
+emmeans(res2, specs = "Sex", df = mod2$ddf[[1]], weights = "prop") 
 
-# marginal means ; all groups are proportionally weighted
-emmeans(res2, specs = ~1, df = mod1$ddf, weights = "prop") 
-emmeans(res2, specs = "Sex", df = mod1$ddf, weights = "prop") 
 
-### Data set for means #####
+# Gonads_removed emmean     SE df lower.CL upper.CL
+# No              0.175 0.0643 75   0.0470    0.303
+# Yes             0.076 0.0488 75  -0.0213    0.173
 
-mdat <- dat %>% filter(Effect_type == TRUE)
 
-mdat$lncvr <- 
-mdat$lnvr
+# Sex    emmean     SE df  lower.CL upper.CL
+# Female 0.0942 0.0487 75 -0.002708    0.191
+# Male   0.0982 0.0496 75 -0.000586    0.197
 
+# Gonads_removed
+
+mod5 <-  rma.mv(yi, V = V_matrix, mod = ~ Gonads_removed -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(mod5) 
+
+r2_ml(mod5)
+
+mod5b <-  rma.mv(yi, V = V_matrix, mod = ~ Gonads_removed, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(mod5b) 
+
+orchard_plot(mod5, mod = "Gonads_removed", xlab = "log response ratio (lnRR)")
+
+
+### longer data
+
+
+# TODO we will do hetero model
+# we can run - some heteroscad models
+# this does not improve model
+mod_n <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+summary(mod_n) 
+
+mod_h <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~Comp_type|Study, ~1|Effect_ID, ~Comp_type|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+summary(mod_h) 
+
+
+orchard_plot(mod_n, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+
+# seprately 
+mod_h1 <-  rma.mv(yi, V = vi,  random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = subset(dat_long, Comp_type== "one_neutured"),  test = "t")
+summary(mod_h1) 
+
+round(i2_ml(mod_h1)*100,2)
+
+mod_h2 <-  rma.mv(yi, V = vi, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = subset(dat_long, Comp_type== "both_normal"), test = "t")
+summary(mod_h2) 
+
+round(i2_ml(mod_h2)*100,2)
+##########################
 #########################
 # Sex difference: new set of analyses #### 
 
