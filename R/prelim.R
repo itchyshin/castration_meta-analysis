@@ -269,7 +269,26 @@ mod_h <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, 
 summary(mod_h) 
 
 
+#female nuked
+mod_nf <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Female"), test = "t")
+summary(mod_nf) 
+
+mod_hf <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~Comp_type|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Female"), test = "t")
+summary(mod_hf) 
+
+#male nuked
+mod_nm <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Male"), test = "t")
+summary(mod_nm) 
+
+mod_hm <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~Comp_type|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Male"), test = "t")
+summary(mod_hm) 
+
+
 orchard_plot(mod_n, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+
+orchard_plot(mod_nf, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+
+orchard_plot(mod_nm, mod = "Comp_type", xlab = "log response ratio (lnRR)")
 
 # seprately 
 mod_h1 <-  rma.mv(yi, V = vi,  random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = subset(dat_long, Comp_type== "one_neutured"),  test = "t")
