@@ -73,8 +73,8 @@ dat$Effect_type <- effect_type
 
 # we create a longer data format
 
-datl <- dat
-
+dat1 <- dat
+dat2 <- dat
 # creating effect sizes
 
 # yi = Treatment - Control
@@ -83,8 +83,6 @@ datl <- dat
 dat$yi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[1]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
 
 dat$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[2]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
-
-
 
 # SMD
 # dat$yi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
@@ -95,17 +93,21 @@ dat$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat
 # lnRR
 
 # here we create the ratio of M/F or F/M 
+dat1$yi <- ifelse(effect_type == TRUE, lnrrm(dat$Control_lifespan_variable,dat$Opposite_sex_lifespan_variable,  dat$Sample_size_control, dat$Sample_size_opposite_sex, datl$Error_control_SD, dat$Error_opposite_sex_SD)[[1]], lnrrp(dat$Control_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_control,  dat$Sample_size_opposite_sex)[[1]])
 
-datl$yi <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, datl$Error_control_SD)[[1]], lnrrp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[1]])
+dat1$vi <-ifelse(effect_type == TRUE, lnrrm(dat$Control_lifespan_variable,dat$Opposite_sex_lifespan_variable,  dat$Sample_size_control, dat$Sample_size_opposite_sex, datl$Error_control_SD, dat$Error_opposite_sex_SD)[[2]], lnrrp(dat$Control_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_control,  dat$Sample_size_opposite_sex)[[2]])
 
-datl$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control, dat$Error_opposite_sex_SD, datl$Error_control_SD)[[2]], lnrrp(dat$Opposite_sex_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_opposite_sex, dat$Sample_size_control)[[2]])
+# here we create CM/F or CF/M
+dat2$yi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[1]], lnrrp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[1]])
 
-dat_long <- rbind(dat, datl)
+dat2$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, dat$Error_experimental_SD, dat$Error_opposite_sex_SD)[[2]], lnrrp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[2]])
+# putting two data frames
+dat_long <- rbind(dat1, dat2)
 
 # putt 2 new column
 
 dat_long$Obs <- factor(1:dim(dat_long)[[1]])
-dat_long$Comp_type <- as.factor(rep(c("one_neutured","both_normal"), each = dim(dat_long)[[1]]/2))
+dat_long$Comp_type <- as.factor(rep(c("both_normal", "one_neutured"), each = dim(dat_long)[[1]]/2))
 
 
 
@@ -179,20 +181,20 @@ mod1b <-  rma.mv(yi, V = V_matrix, mod = ~ Sex, random = list(~1|Phylogeny, ~1|S
 summary(mod1b) 
 
 
-# exuding influential study
+# excluding influential study
 
-dat2 <- dat[dat$Order_extracted != 87 & dat$Order_extracted != 88, ]
-V_matrix2 <- impute_covariance_matrix(vi = dat2$vi, cluster = dat2$Shared_control, r = 0.5)
-
-
-mod12 <-  rma.mv(yi, V = V_matrix2, mod = ~ Sex -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat2, test = "t")
-summary(mod12) 
-
-r2_ml(mod12)
-
-res <- mod_results(mod12, "Sex")
-
-orchard_plot(mod12, mod = "Sex", xlab = "log response ratio (lnRR)")
+# dat2 <- dat[dat$Order_extracted != 87 & dat$Order_extracted != 88, ]
+# V_matrix2 <- impute_covariance_matrix(vi = dat2$vi, cluster = dat2$Shared_control, r = 0.5)
+# 
+# 
+# mod12 <-  rma.mv(yi, V = V_matrix2, mod = ~ Sex -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat2, test = "t")
+# summary(mod12) 
+# 
+# r2_ml(mod12)
+# 
+# res <- mod_results(mod12, "Sex")
+# 
+# orchard_plot(mod12, mod = "Sex", xlab = "log response ratio (lnRR)")
 
 
 # environment - there seems to be too many categories 
@@ -265,41 +267,142 @@ orchard_plot(mod5, mod = "Gonads_removed", xlab = "log response ratio (lnRR)")
 mod_n <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
 summary(mod_n) 
 
+orchard_plot(mod_n, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+
 mod_h <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~Comp_type|Study, ~1|Effect_ID, ~Comp_type|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
 summary(mod_h) 
 
-
-#female nuked
-mod_nf <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Female"), test = "t")
-summary(mod_nf) 
-
-mod_hf <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~Comp_type|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Female"), test = "t")
-summary(mod_hf) 
-
-#male nuked
-mod_nm <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Male"), test = "t")
-summary(mod_nm) 
-
-mod_hm <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~Comp_type|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Male"), test = "t")
-summary(mod_hm) 
+mod_nb <-  rma.mv(yi, V = vi, mod = ~ Comp_type, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+summary(mod_nb) 
 
 
-orchard_plot(mod_n, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+# modeling both type and sex 
 
-orchard_plot(mod_nf, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+mod_n2 <-  rma.mv(yi, V = vi, mod = ~ Comp_type*Sex , random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+summary(mod_n2) 
 
-orchard_plot(mod_nm, mod = "Comp_type", xlab = "log response ratio (lnRR)")
 
-# seprately 
-mod_h1 <-  rma.mv(yi, V = vi,  random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = subset(dat_long, Comp_type== "one_neutured"),  test = "t")
-summary(mod_h1) 
-
-round(i2_ml(mod_h1)*100,2)
-
-mod_h2 <-  rma.mv(yi, V = vi, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = subset(dat_long, Comp_type== "both_normal"), test = "t")
+mod_h2 <-  rma.mv(yi, V = vi, mod = ~Comp_type*Sex, random = list(~1|Phylogeny, ~1|Species_Latin, ~Comp_type_Sex|Study, ~1|Effect_ID, ~Comp_type_Sex|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
 summary(mod_h2) 
 
-round(i2_ml(mod_h2)*100,2)
+
+# as interaction
+
+dat_long$Comp_type_Sex <- paste(dat_long$Comp_type, dat_long$Sex, sep = "_")
+
+mod_n3 <-  rma.mv(yi, V = vi, mod = ~ Comp_type_Sex -1 , random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+summary(mod_n3) 
+
+orchard_plot(mod_n3, mod = "Comp_type_Sex", xlab = "log response ratio (lnRR)")
+
+mod_h3 <-  rma.mv(yi, V = vi, mod = ~Comp_type_Sex -1 , random = list(~1|Phylogeny, ~1|Species_Latin, ~Comp_type_Sex|Study, ~1|Effect_ID, ~Comp_type_Sex|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+summary(mod_h3) 
+
+# both group separate 
+
+mod_neut <-  rma.mv(yi, V = vi, 
+                   mod = ~ 1, 
+                   random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), 
+                   R = list(Phylogeny = cor_tree), 
+                   test = "t",
+                   data = subset(dat_long, Comp_type=="one_neutured"))
+
+
+mod_norm <-  rma.mv(yi, V = vi, 
+                   mod = ~ 1, 
+                   random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), 
+                   R = list(Phylogeny = cor_tree), 
+                   test = "t",
+                   data = subset(dat_long, Comp_type== "both_normal"))
+
+
+summary(mod_neut) 
+summary(mod_norm) 
+
+round(i2_ml(mod_neut)*100,2)
+round(i2_ml(mod_norm)*100, 2)
+
+# for both sexes running separate
+# female nuked
+
+mod_neut_f <-  rma.mv(yi, V = vi, 
+                    mod = ~ 1, 
+                    random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), 
+                    R = list(Phylogeny = cor_tree), 
+                    test = "t",
+                    data = subset(dat_long, Comp_type=="one_neutured" & Sex== "Female"))
+
+
+mod_norm_f <-  rma.mv(yi, V = vi, 
+                    mod = ~ 1, 
+                    random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), 
+                    R = list(Phylogeny = cor_tree), 
+                    test = "t",
+                    data = subset(dat_long, Comp_type== "both_normal" & Sex== "Female"))
+
+
+summary(mod_neut_f) 
+summary(mod_norm_f) 
+
+round(i2_ml(mod_neut_f)*100,2)
+round(i2_ml(mod_norm_f)*100, 2)
+
+# make nuked
+
+mod_neut_m <-  rma.mv(yi, V = vi, 
+                      mod = ~ 1, 
+                      random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), 
+                      R = list(Phylogeny = cor_tree), 
+                      test = "t",
+                      data = subset(dat_long, Comp_type=="one_neutured" & Sex== "Male"))
+
+
+mod_norm_m <-  rma.mv(yi, V = vi, 
+                      mod = ~ 1, 
+                      random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), 
+                      R = list(Phylogeny = cor_tree), 
+                      test = "t",
+                      data = subset(dat_long, Comp_type== "both_normal" & Sex== "Male"))
+
+
+summary(mod_neut_m) 
+summary(mod_norm_m) 
+
+round(i2_ml(mod_neut_m)*100,2)
+round(i2_ml(mod_norm_m)*100, 2)
+
+
+# #female nuked
+# mod_nf <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Female"), test = "t")
+# summary(mod_nf) 
+# 
+# mod_hf <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~Comp_type|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Female"), test = "t")
+# summary(mod_hf) 
+# 
+# #male nuked
+# mod_nm <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Male"), test = "t")
+# summary(mod_nm) 
+# 
+# mod_hm <-  rma.mv(yi, V = vi, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~Comp_type|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = subset(dat_long, Sex== "Male"), test = "t")
+# summary(mod_hm) 
+# 
+# 
+# orchard_plot(mod_n, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+# 
+# orchard_plot(mod_nf, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+# 
+# orchard_plot(mod_nm, mod = "Comp_type", xlab = "log response ratio (lnRR)")
+# 
+# # separately 
+# mod_h1 <-  rma.mv(yi, V = vi,  random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = subset(dat_long, Comp_type== "one_neutured"),  test = "t")
+# summary(mod_h1) 
+# 
+# round(i2_ml(mod_h1)*100,2)
+# 
+# mod_h2 <-  rma.mv(yi, V = vi, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = subset(dat_long, Comp_type== "both_normal"), test = "t")
+# summary(mod_h2) 
+# 
+# round(i2_ml(mod_h2)*100,2)
 ##########################
 #########################
 # Sex difference: new set of analyses #### 
