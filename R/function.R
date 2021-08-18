@@ -89,3 +89,36 @@ lnor_to_d <- function(lnor){
   smd <- lnor*(pi/sqrt(3))
 }
 # invisible
+
+# function to get lnrr for missing SD
+
+# TODO - modify
+# Below is the custom function to calculate the lnRR 
+lnRR_func <- function(Mc, Nc, Me, Ne, aCV2c, aCV2e, rho = 0.5){
+  lnRR <- log(Me/Mc) + 
+    0.5 * ((aCV2e/Ne) - (aCV2c/Nc))	
+  
+  var_lnRR <- (aCV2c/Nc) + (aCV2e/Ne) - 
+    2*rho*(sqrt(aCV2c)*sqrt(aCV2e)/(Nc)) 
+  
+  data.frame(lnRR,var_lnRR)
+}
+
+
+# getting CV2 
+
+aCV2 <- dat %>% 
+  group_by(Study_ID) %>%  # Group by study 
+  summarise(CV2c = mean((SDc/Mc)^2, na.rm = T),  # Calculate the squared coefficient of variation for control and experimental groups
+            CV2e = mean((SDe/Me)^2, na.rm = T)) %>% 
+  ungroup() %>% # ungroup 
+  summarise(aCV2c = mean(CV2c, na.rm = T), # Mean CV^2 for exp and control groups across studies
+            aCV2e = mean(CV2e, na.rm = T)) 
+
+effect <- lnRR_func(Mc = dat$Mc, 
+                    Nc = dat$Nc, 
+                    Me = dat$Me, 
+                    Ne = dat$Ne, 
+                    aCV2c = aCV2[[1]], 
+                    aCV2e = aCV2[[2]],
+                    rho = 0.8)  # Calculate effect sizes
