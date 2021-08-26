@@ -6,14 +6,14 @@ lnrrp <- function(m1, m2, n1, n2) {
   # arcsine transforamtion
   asin_trans <- function(p) { asin(sqrt(p)) }
   # SD for arcsine distribution (see Wiki - https://en.wikipedia.org/wiki/Arcsine_distribution)
-  sd1 <- sqrt(1/8)
-  sd2 <- sqrt(1/8)
+  var1 <- 1/8
+  var2 <- 1/8
   # lnRR - with 2nd order correction
   lnrr <- log(asin_trans(m1)/asin_trans(m2)) + 
-    0.5 * (((sd1^2) / (n1 * m1^2)) - ((sd2^2) / (n2 * m1^2)))	
+    0.5 * ((var1 / (n1 * asin_trans(m1)^2)) - (var2 / (n2 * asin_trans(m2)^2)))	
   
-  var <- sd1^2 / (n1 * m1^2) + sd1^4 / (2 * n1^2 * m2^4)  + 
-    sd2^2 / (n2 * m2^2) + sd2^4 / (2 * n2^2 * m2^4) 
+  var <- var1 / (n1 * asin_trans(m1)^2) + var1^2 / (2 * n1^2 * asin_trans(m1)^4)  + 
+    var2 / (n2 * asin_trans(m2)^2) + var2^2 / (2 * n2^2 * asin_trans(m2)^4) 
   
   invisible(data.frame(yi = lnrr , vi = var))
 }
@@ -23,7 +23,7 @@ lnrrp <- function(m1, m2, n1, n2) {
 lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
   # lnRR - with 2nd order correction
   lnrr <- log(m1/m2) + 
-    0.5 * (((sd1^2) / (n1 * m1^2)) - ((sd2^2) / (n2 * m1^2)))	
+    0.5 * (((sd1^2) / (n1 * m1^2)) - ((sd2^2) / (n2 * m2^2)))	
   
   var <- sd1^2 / (n1 * m1^2) + sd1^4 / (2 * n1^2 * m2^4)  + 
     sd2^2 / (n2 * m2^2) + sd2^4 / (2 * n2^2 * m2^4) 
@@ -122,3 +122,29 @@ effect <- lnRR_func(Mc = dat$Mc,
                     aCV2c = aCV2[[1]], 
                     aCV2e = aCV2[[2]],
                     rho = 0.8)  # Calculate effect sizes
+
+# additonal functions for something else
+
+lnRR_arcsin <- function(m1, m2, n1, n2, sd1, sd2) { # m1 and m2 should be between 0 and 1
+  # arcsine transformation
+  asin_trans <- function(p) { asin(sqrt(p)) }
+  # use the delta method - but keep observed
+  var1 <- sd1^2/(4*m1*(1-m1))
+  var2 <- sd2^2/(4*m2*(1-m2))
+  
+  # assuming theoritcal SD
+  var1b <- 1/(8)
+  var2b <- 1/(8)
+  
+  # lnRR - with 2nd order correction
+  lnrr <- log(asin_trans(m1)/asin_trans(m2)) + 
+    0.5 * ((var1 / (n1 * asin_trans(m1)^2)) - (var2 / (n2 * asin_trans(m2)^2)))	
+  
+  var <- var1 / (n1 * asin_trans(m1)^2) + var1^2 / (2 * n1^2 * asin_trans(m1)^4)  + 
+    var2 / (n2 * asin_trans(m2)^2) + var2^2 / (2 * n2^2 * asin_trans(m2)^4) 
+  
+  var_alt <- var1b / (n1 * asin_trans(m1)^2) + var1b^2 / (2 * n1^2 * asin_trans(m1)^4)  + 
+    var2b / (n2 * asin_trans(m2)^2) + var2b^2 / (2 * n2^2 * asin_trans(m2)^4) 
+  
+  invisible(data.frame(yi = lnrr , vi = var, vi2 = var_alt))
+}
