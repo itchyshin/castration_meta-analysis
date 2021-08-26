@@ -148,3 +148,5 @@ lnRR_arcsin <- function(m1, m2, n1, n2, sd1, sd2) { # m1 and m2 should be betwee
   
   invisible(data.frame(yi = lnrr , vi = var, vi2 = var_alt))
 }
+
+
