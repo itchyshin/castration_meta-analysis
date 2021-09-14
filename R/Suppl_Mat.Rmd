@@ -1,0 +1,207 @@
+---
+title: "Castration extends lifespans of both male and female by 15%"
+author: "Michael Garratt, Jean-François Lemaître, Malgrozata Lagisz & Shinichi Nakagawa"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+    
+    rmdformats::robobook:
+      code_folding: hide
+      code_download: true
+editor_options: 
+  chunk_output_type: console
+# output:
+#   html_document:
+#     code_download: true
+#     code_folding: hide
+#     depth: 4
+#     number_sections: no
+#     theme:  cosmo # “default”, “cerulean”, “journal”, “flatly”, “darkly”, “readable”, “spacelab”, “united”, “cosmo”, “lumen”, “paper”, “sandstone”, “simplex”, “yeti”
+#     toc: yes
+  #   toc_float: yes
+  #   toc_depth: 4
+  # pdf_document:
+  #   toc: yes
+subtitle: Supplementary Material
+#bibliography: references.bib
+#biblio-style: "apalike"
+#csl: ecol_lett.csl # we can change this
+#link-citations: yes
+#always_allow_html: true
+---
+
+```{r setup, include = FALSE}
+#kniter seetting
+knitr::opts_chunk$set(
+message = FALSE,
+warning = FALSE, # no warnings
+cache = TRUE,# Cacheing to save time when kniting
+tidy = TRUE
+#fig.width = 9
+)
+
+# clearning up
+rm(list=ls())
+```
+
+# Setting-ups
+
+## Loading packages
+
+```{r}
+# packages ####
+
+#ochaRd
+# 
+# install.packages("devtools")
+# install.packages("tidyverse")
+# #install.packages("metafor")
+# install.packages("patchwork")
+# install.packages("R.rsp")
+# 
+# devtools::install_github("daniel1noble/orchaRd", force = TRUE, build_vignettes = TRUE)
+# remotes::install_github("rvlenth/emmeans", dependencies = TRUE, build_opts = "") 
+# 
+# #emmeans
+# remotes::install_github("rvlenth/emmeans", dependencies = TRUE, build_opts = "")
+# # metafor
+# install.packages("remotes")
+# remotes::install_github("wviechtb/metafor")
+
+# loading
+pacman::p_load(tidyverse,
+               metafor,
+               pander,
+               stringr,
+               ape,
+               kableExtra,
+               patchwork,
+               here,
+               lme4,
+               readxl,
+               metaAidR,
+               rotl,
+               orchaRd,
+               emmeans,
+               clubSandwich
+)
+```
+
+## Custon functions
+
+```{r}
+# custom functions 
+
+# function for getting lnRR for proportional data
+
+lnrrp <- function(m1, m2, n1, n2) {
+  # arcsine transforamtion
+  asin_trans <- function(p) { asin(sqrt(p)) }
+  # SD for arcsine distribution (see Wiki - https://en.wikipedia.org/wiki/Arcsine_distribution)
+  var1 <- 1/8
+  var2 <- 1/8
+  # lnRR - with 2nd order correction
+  lnrr <- log(asin_trans(m1)/asin_trans(m2)) + 
+    0.5 * ((var1 / (n1 * asin_trans(m1)^2)) - (var2 / (n2 * asin_trans(m2)^2)))	
+  
+  var <- var1 / (n1 * asin_trans(m1)^2) + var1^2 / (2 * n1^2 * asin_trans(m1)^4)  + 
+    var2 / (n2 * asin_trans(m2)^2) + var2^2 / (2 * n2^2 * asin_trans(m2)^4) 
+  
+  invisible(data.frame(yi = lnrr , vi = var))
+}
+
+# function for getting lnRR for mean data
+
+lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
+  # lnRR - with 2nd order correction
+  lnrr <- log(m1/m2) + 
+    0.5 * (((sd1^2) / (n1 * m1^2)) - ((sd2^2) / (n2 * m2^2)))	
+  
+  var <- sd1^2 / (n1 * m1^2) + sd1^4 / (2 * n1^2 * m2^4)  + 
+    sd2^2 / (n2 * m2^2) + sd2^4 / (2 * n2^2 * m2^4) 
+  
+  invisible(data.frame(yi = lnrr , vi = var))
+}
+
+```
+
+# Datasets 
+
+- I will put two data sets here to show with meta-data
+
+## Main dataset and meta-data
+
+```{r, eval =FALSE}
+# # getting the data and formating some variables (turning chraracter vectors to factors)
+# read_csv(here("data/lit_search.csv"), na = "NA") %>%
+#    mutate_if(is.character, as.factor) %>%  kable("html") %>%
+#   kable_styling("striped", position = "left")
+```
+
+## Sub-dataset and meta-data
+
+```{r, eval = FALSE}
+# # getting the data and formating some variables (turning chraracter vectors to factors)
+# full_data <- read_csv(here("data/2021-09-01-source-data-dat.csv"), na = "NA") %>% 
+#    mutate_if(is.character, as.factor)
+# 
+# # dataset to compare the same cophylogenies between the two methods
+# 
+# full_pair <- read_csv(here("data/2020-08-12-paried.csv"), na = "NA") %>% 
+#    mutate_if(is.character, as.factor)
+# 
+# # making a scrollable table
+# kable(full_data, "html") %>%
+#   kable_styling("striped", position = "left") %>%
+#   scroll_box(width = "100%", height = "500px")
+```
+
+A. __authors__: The authors of the study and the date (citation form).
+
+B. __year__: The year of publication of the study.
+
+C. __host_tax_broad__:	Separation of the host group according to broader taxonomic units (e.g. vertebrate, invertebrate, microbe, plant).
+
+D. __symbiont_tax_broad__:	Separation of the symbiont group according to broader taxonomic units (e.g. vertebrate, invertebrate, microbe, plant).
+
+E. __symbiont_euk__*:	Whether the symbiont is eukaryotic (state ='yes'), or prokaryotic (state='no').
+
+
+```{r}
+
+```
+
+## Data processing
+
+### Main data
+```{r}
+# loading data ####
+dat_full1 <- read_csv(here("data", "dat_15082021.csv"), na = c("", "NA"))
+
+
+# deleting unusable rows #####
+# excluding Vasectomy 
+dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% filter(Type_of_sterilization != "Vasectomy") -> dat
+
+im(dat)
+dim(dat_full)
+# separating two kinds
+
+effect_type <- str_detect(dat$Lifespan_parameter, "Me")
+
+
+# effect-level ID
+
+dat$Effect_ID <- 1:nrow(dat)
+dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin)
+dat$Effect_type <- effect_type
+
+
+# we create a longer data format
+
+dat1 <- dat
+dat2 <- dat
+```
+
+### Sub-data
+
+

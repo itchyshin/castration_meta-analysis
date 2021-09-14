@@ -48,6 +48,8 @@ pacman::p_load(tidyverse,
 
 dat <- read_csv(here("data", "dat2_16082021.csv"), na = c("", "NA")) 
 
+
+
 source(here("R","function.R"), chdir = TRUE)
 
 # looking at data

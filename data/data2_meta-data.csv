@@ -1,0 +1,27 @@
+﻿Study,Study data was taken from
+Controlled_treatments,Whether treatment allocation and environments were derived in a controlled way
+Wild_or_semi_wild,Whether the environment was wild/semi-wild or not
+Type_of_sterilization,Type of male sterilization used
+Gonads_removed,Whether gonads were removed as part of the sterilization
+Control_treatment,Type of treatment/sham manipulation applied to controls
+Species_Latin,Latin name of species
+Species,Common name
+Strain,Strain of animal used where relevant
+Environment,Type of environment that effects were assessed in
+Age_at_treatment,Information on age at which sterilization was conducted
+Shared_control,Shared numbers denote that a shared control or treatment group was used in each of these comparisons
+Male_control_lifespan_variable,Lifespan/survival variable for the control male group
+Error_male_control_SD,Standard deviation of control male group
+Sample_size_male_control,Sample size of control male group
+Male_sterilization_lifespan_variable,Lifespan/survival variable for the sterilized male group
+Error_male_sterilization_SD,Standard deviation of sterilized male group
+Sample_size_male_sterilization,Sample size of sterilized male group
+Female_control_lifespan_variable,Lifespan/survival variable for the control female group
+Error_female_control_SD,Standard deviation of control female group
+Sample_size_female_control,Sample size of control female group
+Female_sterilization_lifespan_variable,Lifespan/survival variable for the sterilized female group
+Error_female_sterilization_SD,Standard deviation of sterilized female group
+Sample_size_emale_sterilization,Sample size of sterilized female group
+Lifespan_parameter,Type of survival data
+Lifespan_unit,Unit of measurement for survival data
+Notes,Notes on study and data extraction

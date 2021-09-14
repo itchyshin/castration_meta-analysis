@@ -1,0 +1,37 @@
+﻿Order_extracted,Serial number of the order of effect size extration
+Study,Study data was taken from
+Controlled_treatments,Whether treatment allocation and environments were derived in a controlled way
+Type_of_sterilization,Type of sterilization used
+Gonads_removed,Whether gonads were removed as part of the sterilization
+Control_treatment,Type of treatment/sham manipulation applied to controls
+Sex,Sex in which the effect of sterilization was assessed
+Species_Latin,Latin name of species
+Species,Common name
+Strain,Strain of animal used where relevant
+Environment,Type of environment that effects were assessed in
+Wild_or_semi_wild,Whether the environment was wild/semi-wild or not
+Age_at_treatment,Information on age at which sterilization was conducted
+Maturity_at_treatment,When sterilization was conducted in relation to life stage
+Maturity_at_treatment_ordinal,"When sterilization was conducted as an ordinal variable (1=birth; 2 = pre-puberty, 3 = puberty, 4 = adulthood)"
+Duration_of_treatment,Duration of treatment if not permanent
+Shared_control,Shared numbers denote that a shared control or treatment group was used in each of these comparisons
+Control_lifespan_variable,Lifespan/survival variable for the control group
+Treatment_lifespan_variable,Lifespan/survival variable for the sterilized group
+Opposite_sex_lifespan_variable,Lifespan/survival variable for the opposite sex group if available
+Error_control,Error value for control group as extracted from the original source
+Error_experimental,Error value for sterilized group as extracted from the original source
+Error_opposite_sex,Error value for opposite sex group as extracted from the original source
+Lifespan_parameter,Type of survival data
+Lifespan_unit,Unit of measurement for survival data
+Error_unit,Unit of measurement for error in original source
+Error_control_SD,Standard deviation of control group
+Error_experimental_SD,Standard deviation of sterilized group
+Error_opposite_sex_SD,Standard deviation of opposite sex group
+Coefficent_difference_to_control,Coefficient estimate of difference to control group in lifespan from original source
+Lower_interval,Lower confidence interval for coefficient estimate
+Upper_interval,Upper confidence interval for coefficient estimate
+Coefficent_unit,Unit of measurement for coefficient estimate
+Sample_size_control,Sample size of control group
+Sample_size_sterilization,Sample size of sterilization group
+Sample_size_opposite_sex,Sample size of opposite sex group
+Notes,Notes on study and data extraction

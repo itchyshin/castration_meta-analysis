@@ -49,8 +49,8 @@ pacman::p_load(tidyverse,
 # loading data ####
 
 #dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
-dat_full <- read_csv(here("data", "dat_15082021.csv"), na = c("", "NA"))
-
+dat_full <- read_csv(here("data", "data_14092021.csv"), na = c("", "NA"))
+glimpse(dat_full)
 
 source(here("R","function.R"), chdir = TRUE)
 
@@ -59,7 +59,10 @@ source(here("R","function.R"), chdir = TRUE)
 
 # deleting unusable rows #####
 # excluding Vasectomy 
-dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% filter(Type_of_sterilization != "Vasectomy") -> dat
+# TODO this is important!!!!!
+dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% 
+  filter(Type_of_sterilization != "Vasectomy") %>% 
+  mutate_if(is.character, as.factor) -> dat
 
 
 dim(dat)
@@ -75,6 +78,12 @@ dat$Effect_ID <- 1:nrow(dat)
 dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin,)
 dat$Effect_type <- effect_type
 
+
+# let's get CVs
+
+dat %>% group_by(Study) %>% summarise(cv2_cont = mean((Error_control_SD/Control_lifespan_variable)^2, na.rm = T), cv2_trt = mean((Error_experimental_SD/Treatment_lifespan_variable)^2, na.rm = T), cv2_opst = mean((Error_opposite_sex_SD/Opposite_sex_lifespan_variable)^2, na.rm = T), n_cont = mean(Sample_size_control, na.rm = T), n_trt =  mean(Sample_size_sterilization, na.rm = T), n_opst =  mean(Sample_size_opposite_sex, na.rm = T)) %>% 
+  ungroup() %>% 
+  summarise(cv2_cont = weighted.mean(cv2_cont, n_cont, na.rm = T), cv2_trt = weighted.mean(cv2_trt, n_trt, na.rm = T), cv2_opst = weighted.mean(cv2_opst, n_opst, na.rm = T)) -> cvs
 
 # we create a longer data format
 
@@ -278,7 +287,7 @@ emmeans(res2, specs = "Sex", df = mod2$ddf[[1]], weights = "prop")
 
 # Gonads_removed
 
-# TODO sex specific nalaysis - Gondas_removed
+# TODO sex specific analysis - Gondas_removed
 
 mod5 <-  rma.mv(yi, V = V_matrix, mod = ~ Gonads_removed -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(mod5) 
