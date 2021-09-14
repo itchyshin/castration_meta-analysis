@@ -20,7 +20,7 @@ lnrrp <- function(m1, m2, n1, n2) {
 
 # function for getting lnRR for mean data
 
-lnrrm2 <- function(m1, m2, n1, n2, sd1, sd2) {
+lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
   # lnRR - with 2nd order correction
   lnrr <- log(m1/m2) + 
     0.5 * (((sd1^2) / (n1 * m1^2)) - ((sd2^2) / (n2 * m2^2)))	
@@ -34,7 +34,7 @@ lnrrm2 <- function(m1, m2, n1, n2, sd1, sd2) {
 
 # function to get to 
 
-lnrrm <- function(m1, m2, n1, n2, cv21, cv22) {
+lnrrm2 <- function(m1, m2, n1, n2, cv21, cv22) {
   # lnRR - with 2nd order correction
   lnrr <- log(m1/m2) + 
     0.5 * ((cv21 /n1) - (cv22 / n2))	
