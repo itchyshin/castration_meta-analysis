@@ -75,9 +75,18 @@ effect_type <- ifelse(str_detect(dat$Lifespan_parameter, "Me"), "longevity", "mo
 # effect-level ID
 
 dat$Effect_ID <- 1:nrow(dat)
-dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin,)
+dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin)
 dat$Effect_type <- effect_type
 
+# key variables
+names(dat)
+
+# Sex
+# Wild_or_semi_wild
+# Maturity_at_treatment_ordinal (missing values + contionous variable)
+# Gonads_removed (only applies to female)
+# Controlled_treatments
+# Effect_typle
 
 # let's get CVs
 
@@ -296,6 +305,7 @@ r2_ml(mod3)
 orchard_plot(mod3, mod = "Environment", xlab = "log response ratio (lnRR)")
 
 
+
 # mod = age
 
 # missing 
@@ -311,6 +321,55 @@ regplot(model4,  col = dat$Sex)
 
 model4b <-  rma.mv(yi, V = V_matrix, mod = ~ Sex*Maturity_at_treatment_ordinal, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(model4b) 
+
+model4c <-  rma.mv(yi, V = V_matrix, mod = ~ Sex*Maturity_at_treatment_ordinal - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(model4c) 
+
+
+# drawing ggplots
+
+# drawing sex - matruality interaciton 
+
+pred_sex_matuarity <-predict.rma(model4c) 
+
+# plotting
+
+plot <-  dat %>% 
+  filter(!is.na(Maturity_at_treatment_ordinal))  %>% # getting ride of NA values
+  mutate(ymin = pred_sex_matuarity$ci.lb, 
+         ymax = pred_sex_matuarity$ci.ub, 
+         ymin2 = pred_sex_matuarity$cr.lb,
+         ymax2 = pred_sex_matuarity$cr.ub,
+         pred = pred_sex_matuarity$pred) %>% 
+  ggplot(aes(x = Maturity_at_treatment_ordinal, y = yi, size = sqrt(1/vi), group = Sex)) +
+  geom_point(aes( col = Sex)) +
+  geom_abline(slope = (0.0274 -0.1194),
+              intercept = 0.4547, col = "#00BFC4") +
+  geom_abline(slope = (0.0274),
+              intercept = 0.1396, col = "#F8766D") +
+  
+  geom_smooth(aes(y = ymin, col = Sex), method = "loess", alpha = 0.2, lty = "dotted", lwd = 0.25,se = F) + 
+  
+  
+  
+  # geom_smooth(aes(y = ymin2), method =  "loess", se = FALSE, lty =  "dotted", lwd = 0.25, colour = "#0072B2") +
+  # geom_smooth(aes(y = ymax2), method =  "loess", se = FALSE, lty = "dotted", lwd = 0.25, colour = "#0072B2") +
+  # geom_smooth(aes(y = ymin), method =  "loess", se = FALSE,lty = "dotted", lwd = 0.25, colour ="#D55E00") +
+  # geom_smooth(aes(y = ymax), method =  "loess", se = FALSE, lty ="dotted", lwd = 0.25, colour ="#D55E00") + 
+  # geom_smooth(aes(y = pred), method =  "loess", se = FALSE, lty ="dashed", lwd = 0.5, colour ="black") +  
+ # ylim(-1, 2) + xlim(0, 1.5) +
+  #geom_abline(intercept = mr_host_range_link_ratio$beta[[1]], slope = mr_host_range_link_ratio$beta[[2]], alpha = 0.7, linetype = "dashed", size = 0.5) +
+  labs(x = "Maturity", y = "lnRR (effect isze)", size = "Precision") +
+  #guides(fill = "none", colour = "none") +
+  # themses
+  theme_bw() +
+  theme(legend.position= c(1, 1), legend.justification = c(1, 1)) +
+  theme(legend.direction="horizontal") +
+  #theme(legend.background = element_rect(fill = "white", colour = "black")) +
+  theme(legend.background = element_blank()) +
+  theme(axis.text.y = element_text(size = 10, colour ="black", hjust = 0.5, angle = 90)) 
+
+plot
 
 
 # gonad
@@ -335,8 +394,12 @@ dat$Sex_Gonads <- paste(dat$Sex, dat$Gonads_removed, sep = "_")
 
 mod6 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex_Gonads -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(mod6) 
+r2_ml(mod6)
+
 
 orchard_plot(mod6, mod = "Sex_Gonads", xlab = "log response ratio (lnRR)")
+
+
 
 # quality
 summary(dat$Controlled_treatments)
@@ -365,6 +428,33 @@ orchard_plot(mod8, mod = "Controlled_treatments", xlab = "log response ratio (ln
 
 mod8b <-  rma.mv(yi, V = V_matrix, mod = ~ Effect_type, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
 summary(mod8b) 
+
+
+# sex vs enviroment
+
+dat$Sex_Env <- paste(dat$Sex, dat$Wild_or_semi_wild, sep = "_")
+
+mod9 <-  rma.mv(yi, V = V_matrix, mod = ~ Sex_Env -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(mod9) 
+r2_ml(mod9)
+
+orchard_plot(mod9, mod = "Sex_Env", xlab = "log response ratio (lnRR)")
+
+# Evn vs Controlled
+
+dat$Env_Controlled <- paste(dat$Wild_or_semi_wild, dat$Controlled_treatments, sep = "_")
+
+mod10 <-  rma.mv(yi, V = V_matrix, mod = ~ Env_Controlled -1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(mod10) 
+r2_ml(mod10)
+
+orchard_plot(mod10, mod = "Env_Controlled", xlab = "log response ratio (lnRR)")
+
+
+
+
+#### mulitvaraite ####
+
 
 
 
