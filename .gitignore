@@ -8,6 +8,12 @@
 # User-specific files
 .Ruserdata
 
+# Adobe Illustrator files 
+.ai
+
+# Data Stroragefiles
+.DS_Store
+
 # Example code in package build process
 *-Ex.R
 
