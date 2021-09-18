@@ -31,7 +31,7 @@ subtitle: Supplementary Material
 
 ML NOTEs: 
  - I kept top chunks and added new ones for summarising the dataset AFTER some pre-processing (by SN). 
- - I replaced  "dat_15082021.csv" with  "dat_14092021.csv"
+ - Data from "dat_14092021.csv" file
  - custom functions could be moved to an external source R file
 
 ```{r setup, include = FALSE}
@@ -88,6 +88,9 @@ pacman::p_load(tidyverse,
                orchaRd,
                emmeans, 
                naniar,
+               GoodmanKruskal,
+               ggplot2,
+               ggalluvial,
                clubSandwich
 )
 ```
@@ -129,12 +132,11 @@ lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
 
 ```
 
-# Datasets 
+### Datasets  
+  
+- Shinichi will put two data sets here to show with meta-data?   
 
-- I will put two data sets here to show with meta-data
-
-## Main dataset and meta-data
-
+(Main dataset and meta-data)  
 ```{r, eval =FALSE}
 # # getting the data and formating some variables (turning chraracter vectors to factors)
 # read_csv(here("data/lit_search.csv"), na = "NA") %>%
@@ -142,7 +144,7 @@ lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
 #   kable_styling("striped", position = "left")
 ```
 
-## Sub-dataset and meta-data
+(Sub-dataset and meta-data)  
 
 ```{r, eval = FALSE}
 # # getting the data and formating some variables (turning chraracter vectors to factors)
@@ -161,62 +163,239 @@ lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
 ```
 
 
-## Data processing
+### Data processing -for main data
 
-### Main data
 ```{r load main data}
 # loading data ####
 dat_full1 <- read_csv(here("data", "data_14092021.csv"), na = c("", "NA"))
 names(dat_full1)
-dim(dat_full1)
+#dim(dat_full1) #118 rows
 
 # deleting unusable rows #####
 # excluding Vasectomy 
-dat_full1 %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% filter(Type_of_sterilization != "Vasectomy") -> dat
-dim(dat)
+# TODO this is important!!!!!
+dat_full1 %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% 
+  filter(Type_of_sterilization != "Vasectomy") %>% 
+  mutate_if(is.character, as.factor) -> dat
+#dim(dat) #116 (i.e. removed 2 rows)
 
-# separating two kinds of effect sizes
-effect_type <- str_detect(dat$Lifespan_parameter, "Me")
+# separating two kinds of effect size (longevity vs. mortality measures)
+effect_type <- ifelse(str_detect(dat$Lifespan_parameter, "Me"), "longevity", "mortality")
+#table(effect_type)
 
-# adding columns for effect-level ID, Phylogeny, effect type:
-dat$Effect_ID <- 1:nrow(dat)
-dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin)
-dat$Effect_type <- effect_type
+#add new variables
+dat$Effect_ID <- 1:nrow(dat) # effect-level ID
+dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin) #Pjylogeny species names (for the tree) based on Latin names
+dat$Effect_type <- as.factor(effect_type)
 
-
-# we create a longer data format???
-#dat1 <- dat
-#dat2 <- dat
+#extract publication year from Study variable
+dat$Year <- as.numeric(gsub(".*?([0-9]+).*", "\\1", dat$Study)) #equivalent to parse_number(dat$Study)but does not create problems for NA  
 ```
 
-### Summarise this dataset
+## Summarise the dataset
 
-NOte that ES have not been calculated yet.
+Note that ES have not been calculated yet (use prelim.R code to do so).
 
 Look at the overall pattern of missing data.
 
-```{r}
+```{r missing data, echo = FALSE}
 #vis_miss(dat) #mostly data is missing at comment fields
 
 vis_miss(dat) +
   theme(plot.title = element_text(hjust = 0.5, vjust = 3), 
         plot.margin = margin(t = 0.5, r = 2, b = 1, l = 1, unit = "cm")) +
-  ggtitle("Missing data overallS") #no mising values
-
-unique(dat$Species_Latin)
-
+  ggtitle("Missing data overall") #no mising values
 ```
 
 
+### General summary  
+
+- Number of effect sizes: `r length(unique(dat$Effect_ID))`   
+- Number of studies: `r length(unique(dat$Study))`   
+- Publication years: from `r min(dat$Year, na.rm = TRUE)` to `r max(dat$Year, na.rm = TRUE)`    
+- Simmple list of studies as short references: `r unique(dat$Study)`   
+- Number of species: `r length(unique(dat$Species_Latin))`    
+- Simple list of species Latin names (also stored in "Phylogeny" variable): `r unique(dat$Species_Latin)`    
+- Number of data points for females: `r length(which(dat$Sex=="Female"))`, and data points form males: `r length(which(dat$Sex=="Male"))`   
+ 
+
+```{r key variables simple tables, eval = FALSE}
+#Key variables: Sex, Gonads_removed, Wild_or_semi_wild, Controlled_treatments, Effect_type, Maturity_at_treatment_ordinal (ordinal with NA), 
+names(dat)
+
+#check how crossed with Sex (relevant to both sexes or not?)
+table(dat$Species_Latin, dat$Sex)
+table(dat$Wild_or_semi_wild, dat$Sex)
+table(dat$Gonads_removed, dat$Sex) #always Yes in Males
+table(dat$Controlled_treatments, dat$Sex)
+table(dat$Maturity_at_treatment_ordinal, dat$Sex) #table(dat$Maturity_at_treatment)
+table(dat$Effect_type, dat$Sex)
+
+#check how crossed with Wild_or_semi_wild
+table(dat$Gonads_removed, dat$Wild_or_semi_wild)
+table(dat$Controlled_treatments, dat$Wild_or_semi_wild)
+table(dat$Maturity_at_treatment_ordinal, dat$Wild_or_semi_wild) 
+table(dat$Effect_type, dat$Wild_or_semi_wild)
+
+#check how crossed with Gonads_removed
+table(dat$Wild_or_semi_wild, dat$Gonads_removed)
+table(dat$Controlled_treatments, dat$Gonads_removed)
+table(dat$Maturity_at_treatment_ordinal, dat$Gonads_removed) 
+table(dat$Effect_type, dat$Gonads_removed)
+
+#check how crossed with Controlled_treatments
+table(dat$Wild_or_semi_wild, dat$Controlled_treatments)
+table(dat$Gonads_removed, dat$Controlled_treatments)
+table(dat$Maturity_at_treatment_ordinal, dat$Controlled_treatments)
+table(dat$Effect_type, dat$Controlled_treatments)
+
+#check how crossed with Effect_type
+table(dat$Wild_or_semi_wild, dat$Effect_type)
+table(dat$Gonads_removed, dat$Effect_type)
+table(dat$Controlled_treatments, dat$Effect_type)
+table(dat$Maturity_at_treatment_ordinal, dat$Effect_type)
+```
+
+### Key predictors (moderators)  
+
+Visualise missing data in 6 key variables (moderators):  
+ - Sex,   
+ - Wild_or_semi_wild,   
+ - Maturity_at_treatment_ordinal,  
+ - Gonads_removed,   
+ - Controlled_treatments,   
+ - Effect_type  
+  
+```{r key variables missing values, echo = FALSE}
+#create a data subset wth key variables only
+dat_key <- dat %>% select(Sex, Wild_or_semi_wild, Maturity_at_treatment_ordinal, Gonads_removed, Controlled_treatments, Effect_type)
+
+vis_miss(dat_key) +
+  theme(plot.title = element_text(hjust = 0.5, vjust = 3), 
+        plot.margin = margin(t = 0.5, r = 2, b = 1, l = 1, unit = "cm")) +
+  ggtitle("Missing data in key variables") #32% mising values in Maturity_at_treatment_ordinal only
+```
+
+Visualise pairwise associations between 6 key variables:   
+
+```{r key variables associations, echo = FALSE}
+#names(dat_key)
+#useGoodman and Kruskal’s τ measure of association between categorical predictor variables (function from package GoodmanKruskal: https://cran.r-project.org/web/packages/GoodmanKruskal/vignettes/GoodmanKruskal.html)
+GKmatrix <- GKtauDataframe(subset(dat_key))
+#par(mar=c(1,1,2,4))
+plot(GKmatrix)
+```
 
 
-A. __authors__: The authors of the study and the date (citation form).
+Alluvial diagrams for key predictor variables (variables)moderators) - two groups of 3 moderators, grouped by similarity.
 
-B. __year__: The year of publication of the study.
-
-C. ...
+ A. For Sex, Gonads_removed, Maturity_at_treatment_ordinal (changed NA to 0)
 
 
-```{r}
+```{r alluvial plots A, results = 'hide'}
+#use ggalluvial (https://cran.r-project.org/web/packages/ggalluvial/vignettes/ggalluvial.html)
 
+# create a frequency table for first 3 moderator variables
+# freq_1 <- as.data.frame(table(dat$Sex, dat$Gonads_removed, dat$Maturity_at_treatment_ordinal)) %>% rename(Sex = Var1, Gonads_removed = Var2, Maturity_at_treatment_ordinal = Var3)
+# is_alluvia_form(as.data.frame(freq_1), axes = 1:3, silent = TRUE)
+# #freq_1 %>% filter(Freq != 0) %>% arrange(desc(Freq)) #collapesd table of values, without 0s
+
+ 
+# ggplot(data = freq_1,
+#   aes(axis1 = Sex, axis2 = Gonads_removed, axis3 = Maturity_at_treatment_ordinal, y = Freq)) +
+#   geom_alluvium(aes(fill = Sex)) +
+#   geom_stratum(aes(fill = Sex))+
+#   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+# #theme_minimal() +
+#   theme_void() +
+#   theme(legend.position = "none",
+#         plot.title = element_text(hjust = 0.5, vjust = 3),
+#         axis.title.x = element_text(),
+#         axis.text.x = element_text(face="bold")) +
+#   scale_x_discrete(limits = c("Sex", "Gonads removed", "Maturity class"), expand = c(0.15, 0.05), position = "top") +
+#   scale_fill_brewer(palette = "Set3") +
+#   ggtitle("A. Subjects sex, manipulation type and maturity class")
+
+#as above but with, but with Gonads_removed as first column, and different colours
+# ggplot(data = freq_1,
+#   aes(axis1 = Gonads_removed, axis2 = Sex, axis3 = Maturity_at_treatment_ordinal, y = Freq)) +
+#   geom_alluvium(aes(fill = Gonads_removed)) +
+#   geom_stratum(aes(fill = Gonads_removed))+
+#   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+#   theme_minimal() +
+# #  theme_void() +
+#   theme(legend.position = "none",
+#         plot.title = element_text(hjust = 0.5, vjust = 3),
+#         axis.title.x = element_text(),
+#         axis.text.x = element_text(face="bold")) +
+#   scale_x_discrete(limits = c("Gonads_removed", "Sex", "Maturity class"), expand = c(0.15, 0.05), position = "top") +
+#   scale_fill_brewer(palette = "Pastel2") +
+#   ggtitle("A. Subjects sex, manipulation and maturity ")
+
+#NOTE: all rows with NA in Maturity class are removed from the plot 
+#recode NA as 0
+dat$Maturity_at_treatment_ordinal2 <- dat$Maturity_at_treatment_ordinal
+dat$Maturity_at_treatment_ordinal2[is.na(dat$Maturity_at_treatment_ordinal2)] <- 0
+# create a frequency table for first 3 moderator variables
+freq_1 <- as.data.frame(table(dat$Sex, dat$Gonads_removed, dat$Maturity_at_treatment_ordinal2)) %>% rename(Sex = Var1, Gonads_removed = Var2, Maturity_at_treatment_ordinal = Var3)
+is_alluvia_form(as.data.frame(freq_1), axes = 1:3, silent = TRUE)
+#freq_1 %>% filter(Freq != 0) %>% arrange(desc(Freq)) #collapesd table of values, without 0s
+
+ 
+# ggplot(data = freq_1,
+#   aes(axis1 = Sex, axis2 = Gonads_removed, axis3 = Maturity_at_treatment_ordinal, y = Freq)) +
+#   geom_alluvium(aes(fill = Sex)) +
+#   geom_stratum(aes(fill = Sex))+
+#   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+# #theme_minimal() +
+#   theme_void() +
+#   theme(legend.position = "none",
+#         plot.title = element_text(hjust = 0.5, vjust = 3),
+#         axis.title.x = element_text(),
+#         axis.text.x = element_text(face="bold")) +
+#   scale_x_discrete(limits = c("Sex", "Gonads removed", "Maturity class"), expand = c(0.15, 0.05), position = "top") +
+#   scale_fill_brewer(palette = "Set3") +
+#   ggtitle("A. Subjects sex, manipulation type and maturity class")
+
+#as above but with, but with Gonads_removed as first column, and different colours
+ggplot(data = freq_1,
+  aes(axis1 = Gonads_removed, axis2 = Sex, axis3 = Maturity_at_treatment_ordinal, y = Freq)) +
+  geom_alluvium(aes(fill = Gonads_removed)) +
+  geom_stratum(aes(fill = Gonads_removed))+
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+#  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 3),
+        axis.title.x = element_text(),
+        axis.text.x = element_text(face="bold")) +
+  scale_x_discrete(limits = c("Gonads_removed", "Sex", "Maturity class"), expand = c(0.15, 0.05), position = "top") +
+  scale_fill_brewer(palette = "Pastel2") +
+  ggtitle("A. Subjects sex, manipulation and maturity ")
+```
+
+ B. For Wild_or_semi_wild, Controlled_treatments, Effect_type:   
+
+```{r alluvial plots B, results = 'hide'}
+# create a frequency table for next 3 moderator variables
+freq_2 <- as.data.frame(table(dat$Wild_or_semi_wild, dat$Controlled_treatments, dat$Effect_type)) %>% rename(Wild_or_semi_wild = Var1, Controlled_treatments = Var2, Effect_type = Var3)
+is_alluvia_form(as.data.frame(freq_2), axes = 1:3, silent = TRUE)
+#freq_2 %>% filter(Freq != 0) %>% arrange(desc(Freq)) #collapesd table of values, without 0s
+
+ggplot(data = freq_2,
+  aes(axis1 = Wild_or_semi_wild, axis2 = Controlled_treatments, axis3 = Effect_type, y = Freq)) +
+  geom_alluvium(aes(fill = Wild_or_semi_wild)) +
+  geom_stratum(aes(fill = Wild_or_semi_wild))+
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+#  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 3),
+        axis.title.x = element_text(),
+        axis.text.x = element_text(face="bold")) +
+  scale_x_discrete(limits = c("Wild_or_semi_wild", "Controlled_treatments", "Outcome type"), expand = c(0.15, 0.05), position = "top") +
+  scale_fill_brewer(palette = "Pastel1") +
+  ggtitle("B. Experimental settings and outcome type")
+
+#names(dat_key)
 ```
