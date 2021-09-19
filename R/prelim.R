@@ -39,10 +39,11 @@ pacman::p_load(tidyverse,
                rotl,
                orchaRd,
                emmeans,
-               clubSandwich
+               clubSandwich,
+               MuMIn
 )
 
-
+eval(metafor:::.MuMIn)
 
 
 
@@ -250,7 +251,8 @@ funnel(mod)
 funnel (mod, yaxis="seinv")
 
 # orchard plot
-orchard_plot(mod, mod = "Int", xlab = "log response ratio (lnRR)")
+orchard_plot(mod, mod = "Int", xlab = "log response ratio  
+              d(lnRR)")
 
 # blup plot
 
@@ -504,10 +506,35 @@ orchard_plot(mod10, mod = "Env_Controlled", xlab = "log response ratio (lnRR)")
 
 
 
+##########################
+#### multivariate ####
+#############################
 
-#### mulitvaraite ####
+mod_full <-  rma.mv(yi, V = V_matrix, 
+                    mod = ~ Sex + Sex_Gonads + 
+                      Sex*Controlled_treatments +
+                      Sex*Maturity_at_treatment_ordinal +
+                      Sex*Wild_or_semi_wild + 
+                      Effect_type , random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+summary(mod_full) 
+r2_ml(mod_full)
+#summary(mod_Efm)
+#r2_ml(mod_Efm) 
+
+#res_mod_full <- dredge(mod_full, trace=2)
 
 
+saveRDS(res_mod_full, file = here("Rdata", "res_mod_full"))
+
+res_mod_full <- readRDS(file = here("Rdata", "res_mod_full"))
+
+# delta AIC = 2
+res_mod_full2<- subset(res_mod_full, delta <= 2, recalc.weights=FALSE)
+importance(res_mod_full2)
+
+# delta AIC = 6
+res_mod_full6<- subset(res_mod_full, delta <= 6, recalc.weights=FALSE)
+importance(res_mod_full6)
 
 
 ##### Condtional analysis #######
@@ -544,9 +571,9 @@ emmeans(res2, specs = "Sex", df = mod2$ddf[[1]], weights = "prop")
 
 
 
-
+###################
 ### longer data####
-
+####################
 
 # TODO we will do hetero model
 
