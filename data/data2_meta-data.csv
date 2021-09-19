@@ -1,4 +1,5 @@
-﻿Study,Study data was taken from
+﻿Order_etracted,Serial number of the order of effect size extration (this matches with the colum with the same name in the main dataset)
+Study,Study data was taken from
 Controlled_treatments,Whether treatment allocation and environments were derived in a controlled way
 Wild_or_semi_wild,Whether the environment was wild/semi-wild or not
 Type_of_sterilization,Type of male sterilization used
