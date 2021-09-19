@@ -49,7 +49,7 @@ pacman::p_load(tidyverse,
 # loading data ####
 
 #dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
-dat_full <- read_csv(here("data", "data_14092021.csv"), na = c("", "NA"))
+dat_full <- read_csv(here("data", "data_19092021.csv"), na = c("", "NA"))
 glimpse(dat_full)
 
 source(here("R","function.R"), chdir = TRUE)
@@ -110,9 +110,9 @@ dat2 <- dat
 
 # lnRR
 # using CV
-dat$yi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, cvs[["cv2_trt"]],cvs[["cv2_cont"]])[[1]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
+dat$yi <- ifelse(effect_type == "longevity", lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, cvs[["cv2_trt"]],cvs[["cv2_cont"]])[[1]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
 
-dat$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, cvs[["cv2_trt"]],cvs[["cv2_cont"]])[[2]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
+dat$vi <- ifelse(effect_type == "longevity", lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, cvs[["cv2_trt"]],cvs[["cv2_cont"]])[[2]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
 
 # SMD
 # dat$yi <- ifelse(effect_type == TRUE, smdm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, dat$Error_experimental_SD, dat$Error_control_SD)[[1]], smdp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
@@ -157,14 +157,14 @@ dat$vi <- ifelse(effect_type == TRUE, lnrrm(dat$Treatment_lifespan_variable, dat
 #                         dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[2]])
 
 
-dat1$yi <- ifelse(effect_type == TRUE, 
+dat1$yi <- ifelse(effect_type == "longevity", 
                   lnrrm(dat$Control_lifespan_variable,dat$Opposite_sex_lifespan_variable,  
                         dat$Sample_size_control, dat$Sample_size_opposite_sex, 
                         cvs[["cv2_cont"]],cvs[["cv2_opst"]])[[1]], 
                   lnrrp(dat$Control_lifespan_variable, dat$Opposite_sex_lifespan_variable, 
                         dat$Sample_size_control,  dat$Sample_size_opposite_sex)[[1]])
 
-dat1$vi <-ifelse(effect_type == TRUE, 
+dat1$vi <-ifelse(effect_type == "longevity", 
                  lnrrm(dat$Control_lifespan_variable,dat$Opposite_sex_lifespan_variable,  
                        dat$Sample_size_control, dat$Sample_size_opposite_sex, 
                        cvs[["cv2_cont"]],cvs[["cv2_opst"]])[[2]], 
@@ -172,14 +172,14 @@ dat1$vi <-ifelse(effect_type == TRUE,
                        dat$Sample_size_control,  dat$Sample_size_opposite_sex)[[2]])
 
 # here we create CM/F or CF/M
-dat2$yi <- ifelse(effect_type == TRUE, 
+dat2$yi <- ifelse(effect_type == "longevity", 
                   lnrrm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable,
                         dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, 
                         cvs[["cv2_trt"]],cvs[["cv2_opst"]])[[1]], 
                   lnrrp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, 
                         dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[1]])
 
-dat2$vi <- ifelse(effect_type == TRUE, 
+dat2$vi <- ifelse(effect_type == "longevity", 
                   lnrrm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable,
                         dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, 
                         cvs[["cv2_trt"]],cvs[["cv2_opst"]])[[2]], 
@@ -227,16 +227,68 @@ tree <- compute.brlen(tree)
 cor_tree <- vcv(tree, corr = TRUE)
 # meta-analysis basics
 # phylo model
-mod <-  rma.mv(yi, V = V_matrix, mod = ~ 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID), R = list(Phylogeny = cor_tree), data = dat, test = "t")
+mod <-  rma.mv(yi, V = V_matrix, mod = ~ 1, 
+               random = list(~1|Phylogeny, 
+                             ~1|Species_Latin, 
+                             ~1|Study, 
+                             ~1|Effect_ID), 
+               R = list(Phylogeny = cor_tree), 
+               data = dat, 
+               test = "t",
+               sparse = TRUE,
+               control=list(optimizer="optim", optmethod="Nelder-Mead")
+               )
 summary(mod) 
-robust(mod, cluster = dat$Species_Latin)
+
+# robust funciton gives pretty much the same answer
+#robust(mod, cluster = dat$Study)
+
+
 round(i2_ml(mod)*100, 2)
 
 funnel(mod)
 funnel (mod, yaxis="seinv")
 
+# orchard plot
 orchard_plot(mod, mod = "Int", xlab = "log response ratio (lnRR)")
 
+# blup plot
+
+# getting blups (best linear predictors from the model)
+blups <- ranef(mod) 
+t.spp <- blups$Phylogeny
+t.spp <- rownames_to_column(t.spp, var = "Phylogeny")
+
+# average cultivar
+colnames(t.spp) <- c("Species", "Deviation", "SE", "Lower_bound", "Upper_bound")
+
+
+# knitr::kable(t.cultivar) col.names = c(’Cultivar’,
+# ’Deviation’, ’SE’, ’Lower bound’, ’Upper bound’))
+spp.mean <- mod$b + t.spp$Deviation 
+spp.se <- sqrt(mod$se^2 + t.spp$SE^2) 
+spp.lb <- spp.mean - spp.se * qnorm(0.975) 
+spp.ub <- spp.mean + spp.se * qnorm(0.975)
+t.spp2 <- tibble(Species = t.spp$Species, Mean = spp.mean, SE = spp.se, Lower_bound = spp.lb, Upper_bound = spp.ub) %>% arrange(Species)
+
+# plotting
+
+spp.plot <- ggplot(data = t.spp2, aes(x = Mean, y = Species)) +
+  geom_errorbarh(aes(xmin = Lower_bound, xmax = Upper_bound),  
+                 height = 0, show.legend = FALSE, size = 0.5, alpha = 0.6) +
+  geom_vline(xintercept = 0, linetype = 2, colour = "black", alpha = 0.5) +
+  geom_vline(xintercept = mod$b, linetype = 1, colour = "red") +
+  geom_point(aes(fill = Species), size = 3, shape = 21) + 
+  xlim(-0, 0.25) +
+  theme_bw() +
+  labs(x = "lnRR (effect size)", y = "") + 
+  theme(legend.position= c(0.99, 0.01), legend.justification = c(1, 0)) +
+  theme(legend.title = element_text(size = 9)) +
+  theme(legend.direction="horizontal") +
+  theme(axis.text.y = element_blank()) +
+  theme(axis.text.y = element_text(size = 10, colour ="black",
+                                   hjust = 0.5)) +
+  guides(fill = "none") 
 
 ## species-wise funnel plot 
 

@@ -20,7 +20,7 @@ lnrrp <- function(m1, m2, n1, n2) {
 
 # function for getting lnRR for mean data
 
-lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
+lnrrm2 <- function(m1, m2, n1, n2, sd1, sd2) {
   # lnRR - with 2nd order correction
   lnrr <- log(m1/m2) + 
     0.5 * (((sd1^2) / (n1 * m1^2)) - ((sd2^2) / (n2 * m2^2)))	
@@ -34,7 +34,7 @@ lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
 
 # function to get to 
 
-lnrrm2 <- function(m1, m2, n1, n2, cv21, cv22) {
+lnrrm <- function(m1, m2, n1, n2, cv21, cv22) {
   # lnRR - with 2nd order correction
   lnrr <- log(m1/m2) + 
     0.5 * ((cv21 /n1) - (cv22 / n2))	
@@ -119,46 +119,27 @@ lnRR_func <- function(Mc, Nc, Me, Ne, aCV2c, aCV2e, rho = 0.5){
   data.frame(lnRR,var_lnRR)
 }
 
-
-# getting CV2 
-
-aCV2 <- dat %>% 
-  group_by(Study_ID) %>%  # Group by study 
-  summarise(CV2c = mean((SDc/Mc)^2, na.rm = T),  # Calculate the squared coefficient of variation for control and experimental groups
-            CV2e = mean((SDe/Me)^2, na.rm = T)) %>% 
-  ungroup() %>% # ungroup 
-  summarise(aCV2c = mean(CV2c, na.rm = T), # Mean CV^2 for exp and control groups across studies
-            aCV2e = mean(CV2e, na.rm = T)) 
-
-effect <- lnRR_func(Mc = dat$Mc, 
-                    Nc = dat$Nc, 
-                    Me = dat$Me, 
-                    Ne = dat$Ne, 
-                    aCV2c = aCV2[[1]], 
-                    aCV2e = aCV2[[2]],
-                    rho = 0.8)  # Calculate effect sizes
-
 # additional functions for something else
-
-lnRR_arcsin <- function(m1, m2, n1, n2) { # m1 and m2 should be between 0 and 1
-  # arcsine transformation
-  asin_trans <- function(p) { asin(sqrt(p)) }
-  # use the delta method - but keep observed
-  #var1 <- sd1^2/(4*m1*(1-m1))
-  #var2 <- sd2^2/(4*m2*(1-m2))
-  
-  # assuming theoritcal SD
-  var1 <- 1/(8)
-  var2 <- 1/(8)
-  
-  # lnRR - with 2nd order correction
-  lnrr <- log(asin_trans(m1)/asin_trans(m2)) + 
-    0.5 * ((var1 / (n1 * asin_trans(m1)^2)) - (var2 / (n2 * asin_trans(m2)^2)))	
-  
-  var <- var1 / (n1 * asin_trans(m1)^2) + var1^2 / (2 * n1^2 * asin_trans(m1)^4)  + 
-    var2 / (n2 * asin_trans(m2)^2) + var2^2 / (2 * n2^2 * asin_trans(m2)^4) 
-  
-  invisible(data.frame(yi = lnrr , vi = var))
-}
+# 
+# lnRR_arcsin <- function(m1, m2, n1, n2) { # m1 and m2 should be between 0 and 1
+#   # arcsine transformation
+#   asin_trans <- function(p) { asin(sqrt(p)) }
+#   # use the delta method - but keep observed
+#   #var1 <- sd1^2/(4*m1*(1-m1))
+#   #var2 <- sd2^2/(4*m2*(1-m2))
+#   
+#   # assuming theoritcal SD
+#   var1 <- 1/(8)
+#   var2 <- 1/(8)
+#   
+#   # lnRR - with 2nd order correction
+#   lnrr <- log(asin_trans(m1)/asin_trans(m2)) + 
+#     0.5 * ((var1 / (n1 * asin_trans(m1)^2)) - (var2 / (n2 * asin_trans(m2)^2)))	
+#   
+#   var <- var1 / (n1 * asin_trans(m1)^2) + var1^2 / (2 * n1^2 * asin_trans(m1)^4)  + 
+#     var2 / (n2 * asin_trans(m2)^2) + var2^2 / (2 * n2^2 * asin_trans(m2)^4) 
+#   
+#   invisible(data.frame(yi = lnrr , vi = var))
+# }
 
 

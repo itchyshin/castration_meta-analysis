@@ -1,7 +1,8 @@
 # example of BLUPS
 
 # getting blups (best linear predictors from the model)
-blups <- ranef(RE0.reml) t.cultivar <- blups$cultivar
+blups <- ranef(RE0.reml) 
+t.cultivar <- blups$cultivar
 t.cultivar <- rownames_to_column(t.cultivar, var = "cultivar")
 # this is deviation from the meta-analytic mean -ve values
 # mean more pollinator dependence and +ve means less than the
