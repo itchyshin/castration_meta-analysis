@@ -254,43 +254,7 @@ funnel (mod, yaxis="seinv")
 orchard_plot(mod, mod = "Int", xlab = "log response ratio  
               d(lnRR)")
 
-# blup plot
 
-# getting blups (best linear predictors from the model)
-blups <- ranef(mod) 
-t.spp <- blups$Phylogeny
-t.spp <- rownames_to_column(t.spp, var = "Phylogeny")
-
-# average cultivar
-colnames(t.spp) <- c("Species", "Deviation", "SE", "Lower_bound", "Upper_bound")
-
-
-# knitr::kable(t.cultivar) col.names = c(’Cultivar’,
-# ’Deviation’, ’SE’, ’Lower bound’, ’Upper bound’))
-spp.mean <- mod$b + t.spp$Deviation 
-spp.se <- sqrt(mod$se^2 + t.spp$SE^2) 
-spp.lb <- spp.mean - spp.se * qnorm(0.975) 
-spp.ub <- spp.mean + spp.se * qnorm(0.975)
-t.spp2 <- tibble(Species = t.spp$Species, Mean = spp.mean, SE = spp.se, Lower_bound = spp.lb, Upper_bound = spp.ub) %>% arrange(Species)
-
-# plotting
-
-spp.plot <- ggplot(data = t.spp2, aes(x = Mean, y = Species)) +
-  geom_errorbarh(aes(xmin = Lower_bound, xmax = Upper_bound),  
-                 height = 0, show.legend = FALSE, size = 0.5, alpha = 0.6) +
-  geom_vline(xintercept = 0, linetype = 2, colour = "black", alpha = 0.5) +
-  geom_vline(xintercept = mod$b, linetype = 1, colour = "red") +
-  geom_point(aes(fill = Species), size = 3, shape = 21) + 
-  xlim(-0, 0.25) +
-  theme_bw() +
-  labs(x = "lnRR (effect size)", y = "") + 
-  theme(legend.position= c(0.99, 0.01), legend.justification = c(1, 0)) +
-  theme(legend.title = element_text(size = 9)) +
-  theme(legend.direction="horizontal") +
-  theme(axis.text.y = element_blank()) +
-  theme(axis.text.y = element_text(size = 10, colour ="black",
-                                   hjust = 0.5)) +
-  guides(fill = "none") 
 
 ## species-wise funnel plot 
 
