@@ -385,7 +385,7 @@ mod_func <-  function(formula) {
                data = dat, 
                test = "t",
                sparse = TRUE,
-               control=list(optimizer="optim", optmethod="Nelder-Mead")
+               control=list(optimizer="optim", optmethod="BFGS")
                )
 }
 
@@ -443,12 +443,15 @@ o_plot(mod_sex, moderator = "Sex")
 ```
 
 
-### 
+### Enviormental (`Wild_or_semi_wild`)
 
 ```{r}
-mod_sex <- mod_func(formula = ~ Sex-1)
-summary(mod_sex)
-o_plot(mod_sex, moderator = "Sex")
+mod_env <- mod_func(formula = ~ Wild_or_semi_wild-1)
+summary(mod_env)
+o_plot(mod_env, moderator = "Wild_or_semi_wild")
 ```
 
-###
+### Gonad Removal
+
+
+
