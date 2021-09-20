@@ -36,8 +36,8 @@ t.spp2 <- tibble(Species = t.spp$Species, Mean = spp.mean, SE = spp.se, Lower_bo
 # reading in photos
 filenames <- list.files("icons", pattern=".png", full.names=TRUE)
 ldf <- lapply(filenames, readPNG)
-names(ldf) <- substr(filenames, 7, 30)
-name <- substr(filenames, 7, 60)
+names(ldf) <- substr(filenames, 7, 60)
+#name <- substr(filenames, 7, 60)
 
 
 spp.plot <- ggplot(data = t.spp2, aes(x = Mean, y = Species)) +
@@ -56,7 +56,8 @@ spp.plot <- ggplot(data = t.spp2, aes(x = Mean, y = Species)) +
   theme(axis.text.y = element_text(size = 10, colour ="black",
                                    hjust = 0.5)) +
   guides(fill = "none")  + 
-  annotation_custom(rasterGrob(ldf[[1]]), xmin = 0.01, xmax = 0.05, ymin = 0.5, ymax = 1.5) + 
+  #annotation_custom(rasterGrob(ldf), xmin = rep(0.01, 14), xmax = rep(0.05, 14), ymin = seq(0.5, 13.5, 1), ymax = seq(1.5, 14.5, 1)) 
+  annotation_custom(rasterGrob(ldf[[1]]), xmin = 0.01, xmax = 0.05, ymin = 0.5, ymax = 1.5) +
   annotation_custom(rasterGrob(ldf[[2]]), xmin = 0.01, xmax = 0.05, ymin = 1.5, ymax = 2.5) +
   annotation_custom(rasterGrob(ldf[[3]]), xmin = 0.01, xmax = 0.05, ymin = 2.5, ymax = 3.5) +
   annotation_custom(rasterGrob(ldf[[4]]), xmin = 0.01, xmax = 0.05, ymin = 3.5, ymax = 4.5) +
@@ -69,7 +70,8 @@ spp.plot <- ggplot(data = t.spp2, aes(x = Mean, y = Species)) +
   annotation_custom(rasterGrob(ldf[[11]]), xmin = 0.01, xmax = 0.05, ymin = 10.5, ymax = 11.5) +
   annotation_custom(rasterGrob(ldf[[12]]), xmin = 0.01, xmax = 0.05, ymin = 11.5, ymax = 12.5) +
   annotation_custom(rasterGrob(ldf[[13]]), xmin = 0.01, xmax = 0.05, ymin = 12.5, ymax = 13.5) +
-  annotation_custom(rasterGrob(ldf[[14]]), xmin = 0.01, xmax = 0.05, ymin = 13.5, ymax = 14.5) 
+  annotation_custom(rasterGrob(ldf[[14]]), xmin = 0.01, xmax = 0.05, ymin = 13.5, ymax = 14.5)
 
 spp.plot
+
 
