@@ -4,7 +4,7 @@ author: "Michael Garratt, Jean-François Lemaître, Malgrozata Lagisz & Shinichi
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
     
-    rmdformats::robobook:
+    rmdformats::readthedown:
       code_folding: hide
       code_download: true
 editor_options: 
@@ -82,47 +82,13 @@ pacman::p_load(tidyverse,
                rotl,
                orchaRd,
                emmeans,
-               clubSandwich
+               clubSandwich,
+               MuMIn,
+               png,
+               grid
 )
 ```
 
-## Custon functions
-
-```{r}
-# custom functions 
-
-# function for getting lnRR for proportional data
-
-lnrrp <- function(m1, m2, n1, n2) {
-  # arcsine transforamtion
-  asin_trans <- function(p) { asin(sqrt(p)) }
-  # SD for arcsine distribution (see Wiki - https://en.wikipedia.org/wiki/Arcsine_distribution)
-  var1 <- 1/8
-  var2 <- 1/8
-  # lnRR - with 2nd order correction
-  lnrr <- log(asin_trans(m1)/asin_trans(m2)) + 
-    0.5 * ((var1 / (n1 * asin_trans(m1)^2)) - (var2 / (n2 * asin_trans(m2)^2)))	
-  
-  var <- var1 / (n1 * asin_trans(m1)^2) + var1^2 / (2 * n1^2 * asin_trans(m1)^4)  + 
-    var2 / (n2 * asin_trans(m2)^2) + var2^2 / (2 * n2^2 * asin_trans(m2)^4) 
-  
-  invisible(data.frame(yi = lnrr , vi = var))
-}
-
-# function for getting lnRR for mean data
-
-lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
-  # lnRR - with 2nd order correction
-  lnrr <- log(m1/m2) + 
-    0.5 * (((sd1^2) / (n1 * m1^2)) - ((sd2^2) / (n2 * m2^2)))	
-  
-  var <- sd1^2 / (n1 * m1^2) + sd1^4 / (2 * n1^2 * m2^4)  + 
-    sd2^2 / (n2 * m2^2) + sd2^4 / (2 * n2^2 * m2^4) 
-  
-  invisible(data.frame(yi = lnrr , vi = var))
-}
-
-```
 
 # Datasets 
 
@@ -155,15 +121,6 @@ lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
 #   scroll_box(width = "100%", height = "500px")
 ```
 
-A. __authors__: The authors of the study and the date (citation form).
-
-B. __year__: The year of publication of the study.
-
-C. __host_tax_broad__:	Separation of the host group according to broader taxonomic units (e.g. vertebrate, invertebrate, microbe, plant).
-
-D. __symbiont_tax_broad__:	Separation of the symbiont group according to broader taxonomic units (e.g. vertebrate, invertebrate, microbe, plant).
-
-E. __symbiont_euk__*:	Whether the symbiont is eukaryotic (state ='yes'), or prokaryotic (state='no').
 
 
 ```{r}
@@ -172,21 +129,63 @@ E. __symbiont_euk__*:	Whether the symbiont is eukaryotic (state ='yes'), or prok
 
 ## Data processing
 
+### Functions for calculating effect size (lnRR)
+
+```{r}
+# custom functions 
+
+# function for getting lnRR for proportional data (mortality)
+
+lnrrp <- function(m1, m2, n1, n2) {
+  # arcsine transforamtion
+  asin_trans <- function(p) { asin(sqrt(p)) }
+  # SD for arcsine distribution (see Wiki - https://en.wikipedia.org/wiki/Arcsine_distribution)
+  var1 <- 1/8
+  var2 <- 1/8
+  # lnRR - with 2nd order correction
+  lnrr <- log(asin_trans(m1)/asin_trans(m2)) + 
+    0.5 * ((var1 / (n1 * asin_trans(m1)^2)) - (var2 / (n2 * asin_trans(m2)^2)))	
+  
+  var <- var1 / (n1 * asin_trans(m1)^2) + var1^2 / (2 * n1^2 * asin_trans(m1)^4)  + 
+    var2 / (n2 * asin_trans(m2)^2) + var2^2 / (2 * n2^2 * asin_trans(m2)^4) 
+  
+  invisible(data.frame(yi = lnrr , vi = var))
+}
+
+
+# function to get to lnRR for longevity data (CV required)
+
+lnrrm <- function(m1, m2, n1, n2, cv21, cv22) {
+  # lnRR - with 2nd order correction
+  lnrr <- log(m1/m2) + 
+    0.5 * ((cv21 /n1) - (cv22 / n2))	
+  
+  var <- (cv21 / n1) + ((cv21^2) / (2 * n1^2))  + 
+    (cv22/ n2) + ((cv22^2) / (2 * n2^2) )
+  
+  invisible(data.frame(yi = lnrr , vi = var))
+}
+
+```
+
+
 ### Main data
 ```{r}
-# loading data ####
-dat_full1 <- read_csv(here("data", "dat_15082021.csv"), na = c("", "NA"))
+#dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
+dat_full <- read_csv(here("data", "data_19092021.csv"), na = c("", "NA"))
+glimpse(dat_full)
+
+#loading data ####
+dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% 
+  filter(Type_of_sterilization != "Vasectomy") %>% 
+  mutate_if(is.character, as.factor) -> dat
 
 
-# deleting unusable rows #####
-# excluding Vasectomy 
-dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% filter(Type_of_sterilization != "Vasectomy") -> dat
-
-im(dat)
+dim(dat)
 dim(dat_full)
 # separating two kinds
 
-effect_type <- str_detect(dat$Lifespan_parameter, "Me")
+effect_type <- ifelse(str_detect(dat$Lifespan_parameter, "Me"), "longevity", "mortality")
 
 
 # effect-level ID
@@ -195,13 +194,261 @@ dat$Effect_ID <- 1:nrow(dat)
 dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin)
 dat$Effect_type <- effect_type
 
+# key variables
+names(dat)
+```
 
+#### Calcuating effect size for the main data
+
+```{r}
+# let's get CVs
+
+dat %>% group_by(Study) %>% summarise(cv2_cont = mean((Error_control_SD/Control_lifespan_variable)^2, na.rm = T), cv2_trt = mean((Error_experimental_SD/Treatment_lifespan_variable)^2, na.rm = T), cv2_opst = mean((Error_opposite_sex_SD/Opposite_sex_lifespan_variable)^2, na.rm = T), n_cont = mean(Sample_size_control, na.rm = T), n_trt =  mean(Sample_size_sterilization, na.rm = T), n_opst =  mean(Sample_size_opposite_sex, na.rm = T)) %>% 
+  ungroup() %>% 
+  summarise(cv2_cont = weighted.mean(cv2_cont, n_cont, na.rm = T), cv2_trt = weighted.mean(cv2_trt, n_trt, na.rm = T), cv2_opst = weighted.mean(cv2_opst, n_opst, na.rm = T)) -> cvs
+
+# lnRR
+# using CV
+dat$yi <- ifelse(effect_type == "longevity", lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, cvs[["cv2_trt"]],cvs[["cv2_cont"]])[[1]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[1]])
+
+dat$vi <- ifelse(effect_type == "longevity", lnrrm(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control, cvs[["cv2_trt"]],cvs[["cv2_cont"]])[[2]], lnrrp(dat$Treatment_lifespan_variable, dat$Control_lifespan_variable, dat$Sample_size_sterilization, dat$Sample_size_control)[[2]])
+
+# getting effect size for the long format 
 # we create a longer data format
 
 dat1 <- dat
 dat2 <- dat
+
+dat1$yi <- ifelse(effect_type == "longevity", 
+                  lnrrm(dat$Control_lifespan_variable,dat$Opposite_sex_lifespan_variable,  
+                        dat$Sample_size_control, dat$Sample_size_opposite_sex, 
+                        cvs[["cv2_cont"]],cvs[["cv2_opst"]])[[1]], 
+                  lnrrp(dat$Control_lifespan_variable, dat$Opposite_sex_lifespan_variable, 
+                        dat$Sample_size_control,  dat$Sample_size_opposite_sex)[[1]])
+
+dat1$vi <-ifelse(effect_type == "longevity", 
+                 lnrrm(dat$Control_lifespan_variable,dat$Opposite_sex_lifespan_variable,  
+                       dat$Sample_size_control, dat$Sample_size_opposite_sex, 
+                       cvs[["cv2_cont"]],cvs[["cv2_opst"]])[[2]], 
+                 lnrrp(dat$Control_lifespan_variable, dat$Opposite_sex_lifespan_variable, 
+                       dat$Sample_size_control,  dat$Sample_size_opposite_sex)[[2]])
+
+# here we create CM/F or CF/M
+dat2$yi <- ifelse(effect_type == "longevity", 
+                  lnrrm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable,
+                        dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, 
+                        cvs[["cv2_trt"]],cvs[["cv2_opst"]])[[1]], 
+                  lnrrp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, 
+                        dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[1]])
+
+dat2$vi <- ifelse(effect_type == "longevity", 
+                  lnrrm(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable,
+                        dat$Sample_size_sterilization, dat$Sample_size_opposite_sex, 
+                        cvs[["cv2_trt"]],cvs[["cv2_opst"]])[[2]], 
+                  lnrrp(dat$Treatment_lifespan_variable, dat$Opposite_sex_lifespan_variable, 
+                        dat$Sample_size_sterilization, dat$Sample_size_opposite_sex)[[2]])
+
+
+
+
+# putting two data frames
+dat_long <- rbind(dat1, dat2)
+
+# putt 2 new column
+
+dat_long$Obs <- factor(1:dim(dat_long)[[1]])
+dat_long$Comp_type <- as.factor(rep(c("both_normal", "one_neutured"), each = dim(dat_long)[[1]]/2))
+
+
+dim(dat_long)
+
+
 ```
+
 
 ### Sub-data
 
+```{r}
+sdat <- read_csv(here("data", "data2_19092021.csv"), na = c("", "NA")) 
 
+effect_type_s <- ifelse(str_detect(sdat$Lifespan_parameter, "Me"), "longevity", "mortality")
+
+
+# effect-level ID
+
+sdat$Effect_ID <- 1:nrow(sdat)
+sdat$Phylogeny <- sub(" ", "_",  sdat$Species_Latin)
+sdat$Effect_type <- effect_type_s
+```
+
+
+#### Calcuating effect size
+```{r}
+# we create a longer data format
+
+sdat1 <- sdat
+sdat2 <- sdat
+# lnRR
+
+# here we create the ratio of F/M 
+sdat1$yi <- ifelse(effect_type_s == "longevity", 
+                  lnrrm(sdat$Female_control_lifespan_variable, sdat$Male_control_lifespan_variable,
+                        sdat$Sample_size_female_control, sdat$Sample_size_male_control, 
+                        cvs[["cv2_cont"]],cvs[["cv2_cont"]])[[1]], 
+                  lnrrp(sdat$Female_control_lifespan_variable, sdat$Male_control_lifespan_variable, 
+                        sdat$Sample_size_female_control,  sdat$Sample_size_male_control)[[1]])
+
+sdat1$vi <- ifelse(effect_type_s == "longevity", 
+                  lnrrm(sdat$Female_control_lifespan_variable, sdat$Male_control_lifespan_variable,
+                        sdat$Sample_size_female_control, sdat$Sample_size_male_control, 
+                        cvs[["cv2_cont"]],cvs[["cv2_cont"]])[[2]], 
+                  lnrrp(sdat$Female_control_lifespan_variable, sdat$Male_control_lifespan_variable, 
+                        sdat$Sample_size_female_control,  sdat$Sample_size_male_control)[[2]])
+
+# here we create CF/CM
+sdat2$yi <- ifelse(effect_type_s == "longevity", 
+                  lnrrm(sdat$Female_sterilization_lifespan_variable, sdat$Male_sterilization_lifespan_variable,
+                        sdat$Sample_size_female_sterilization, sdat$Sample_size_male_sterilization, 
+                        cvs[["cv2_trt"]],cvs[["cv2_trt"]])[[1]], 
+                  lnrrp(sdat$Female_sterilization_lifespan_variable, sdat$Male_sterilization_lifespan_variable, 
+                        sdat$Sample_size_female_sterilization,  sdat$Sample_size_male_sterilization)[[1]])
+
+sdat2$vi <-  ifelse(effect_type_s == "longevity", 
+                   lnrrm(sdat$Female_sterilization_lifespan_variable, sdat$Male_sterilization_lifespan_variable,
+                         sdat$Sample_size_female_sterilization, sdat$Sample_size_male_sterilization, 
+                         cvs[["cv2_trt"]],cvs[["cv2_trt"]])[[2]], 
+                   lnrrp(sdat$Female_sterilization_lifespan_variable, sdat$Male_sterilization_lifespan_variable, 
+                         sdat$Sample_size_female_sterilization,  sdat$Sample_size_male_sterilization)[[2]])
+
+# merging sdata frames
+sdat_long <- rbind(sdat1, sdat2)
+
+# putt 2 new column
+
+sdat_long$Obs <- factor(1:dim(sdat_long)[[1]])
+sdat_long$Comp_type <- as.factor(rep(c("both_normal", "both_castrated"), each = dim(sdat_long)[[1]]/2))
+
+```
+
+# Meta-analysis (the same sex contrasts)
+
+## Main model 
+
+```{r}
+# shared control 
+# this does not seem to work
+#V_matrix <- make_VCV_matrix(dat, V= "vi", cluster = "Shared_control", obs = "Effect_ID")
+
+V_matrix <- impute_covariance_matrix(vi = dat$vi, cluster = dat$Shared_control, r = 0.5)
+
+# phylogeny
+
+tree <- read.tree(here("data/tree_rotl.tre"))
+
+tree <- compute.brlen(tree)
+cor_tree <- vcv(tree, corr = TRUE)
+# meta-analysis basics
+# phylo model
+mod <-  rma.mv(yi, V = V_matrix, mod = ~ 1, 
+               random = list(~1|Phylogeny, 
+                             ~1|Species_Latin, 
+                             ~1|Study, 
+                             ~1|Effect_ID), 
+               R = list(Phylogeny = cor_tree), 
+               data = dat, 
+               test = "t",
+               sparse = TRUE,
+               control=list(optimizer="optim", optmethod="Nelder-Mead")
+               )
+summary(mod) 
+
+orchard_plot(mod, mod = "Int", xlab = "log response ratio (lnRR)")
+
+```
+
+
+# Meta-regression (the same sex contrasts) 
+
+## Model function
+
+```{r}
+
+mod_func <-  function(formula) {
+        rma.mv(yi, 
+               V = V_matrix,
+               mod = formula, 
+               random = list(~1|Phylogeny, 
+                             ~1|Species_Latin, 
+                             ~1|Study, 
+                             ~1|Effect_ID), 
+               R = list(Phylogeny = cor_tree), 
+               data = dat, 
+               test = "t",
+               sparse = TRUE,
+               control=list(optimizer="optim", optmethod="Nelder-Mead")
+               )
+}
+
+```
+
+
+## Plotting functions
+
+```{r}
+
+# orchard plot
+o_plot <- function(mod, moderator = "Int"){
+  orchard_plot(mod, mod = moderator, xlab = "log response ratio (lnRR)", angle = 0)
+}
+
+# bubble plot
+b_plot <- function(data, mod, moderator = "Maturity_at_treatment_ordinal"){
+  data %>% 
+  filter(!is.na(print("moderator", quote = F)))  %>% # getting ride of NA values
+  mutate(ymin = pred_sex_matuarity$ci.lb, 
+         ymax = pred_sex_matuarity$ci.ub, 
+         ymin2 = pred_sex_matuarity$cr.lb,
+         ymax2 = pred_sex_matuarity$cr.ub,
+         pred = pred_sex_matuarity$pred) %>% 
+  ggplot(aes(x = Maturity_at_treatment_ordinal, y = yi, size = sqrt(1/vi), group = Sex)) +
+  geom_point(aes( col = Sex)) +
+  geom_abline(slope = (0.0274 -0.1194),
+              intercept = 0.4547, col = "#00BFC4") +
+  geom_abline(slope = (0.0274),
+              intercept = 0.1396, col = "#F8766D") +
+  
+  geom_smooth(aes(y = ymin, col = Sex), method = "loess", alpha = 0.2, lty = "dotted", lwd = 0.25,se = F) + 
+  labs(x = "Maturity", y = "lnRR (effect isze)", size = "Precision") +
+  #guides(fill = "none", colour = "none") +
+  # themses
+  theme_bw() +
+  theme(legend.position= c(1, 1), legend.justification = c(1, 1)) +
+  theme(legend.direction="horizontal") +
+  #theme(legend.background = element_rect(fill = "white", colour = "black")) +
+  theme(legend.background = element_blank()) +
+  theme(axis.text.y = element_text(size = 10, colour ="black", hjust = 0.5, angle = 90)) 
+}
+
+```
+
+
+## Uni-moderator models {.tabset .tabset_fade .tabset_pills}
+
+### Sex difference (`Sex`)
+
+```{r}
+mod_sex <- mod_func(formula = ~ Sex-1)
+summary(mod_sex)
+o_plot(mod_sex, moderator = "Sex")
+```
+
+
+### 
+
+```{r}
+mod_sex <- mod_func(formula = ~ Sex-1)
+summary(mod_sex)
+o_plot(mod_sex, moderator = "Sex")
+```
+
+###

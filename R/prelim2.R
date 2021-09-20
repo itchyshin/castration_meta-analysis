@@ -46,7 +46,7 @@ pacman::p_load(tidyverse,
 
 # loading data ####
 
-dat <- read_csv(here("data", "dat2_16082021.csv"), na = c("", "NA")) 
+dat <- read_csv(here("data", "dat2_19082021.csv"), na = c("", "NA")) 
 
 
 
@@ -58,7 +58,7 @@ dat
 dim(dat)
 names(dat)
 
-effect_type <- str_detect(dat$Lifespan_parameter, "Me")
+effect_type <- ifelse(str_detect(dat$Lifespan_parameter, "Me"), "longevity", "mortality")
 
 
 # effect-level ID

@@ -32,7 +32,7 @@ lnrrm2 <- function(m1, m2, n1, n2, sd1, sd2) {
 }
 
 
-# function to get to 
+# function to get to lnRR using CV
 
 lnrrm <- function(m1, m2, n1, n2, cv21, cv22) {
   # lnRR - with 2nd order correction

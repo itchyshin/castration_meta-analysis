@@ -367,16 +367,6 @@ plot <-  dat %>%
               intercept = 0.1396, col = "#F8766D") +
   
   geom_smooth(aes(y = ymin, col = Sex), method = "loess", alpha = 0.2, lty = "dotted", lwd = 0.25,se = F) + 
-  
-  
-  
-  # geom_smooth(aes(y = ymin2), method =  "loess", se = FALSE, lty =  "dotted", lwd = 0.25, colour = "#0072B2") +
-  # geom_smooth(aes(y = ymax2), method =  "loess", se = FALSE, lty = "dotted", lwd = 0.25, colour = "#0072B2") +
-  # geom_smooth(aes(y = ymin), method =  "loess", se = FALSE,lty = "dotted", lwd = 0.25, colour ="#D55E00") +
-  # geom_smooth(aes(y = ymax), method =  "loess", se = FALSE, lty ="dotted", lwd = 0.25, colour ="#D55E00") + 
-  # geom_smooth(aes(y = pred), method =  "loess", se = FALSE, lty ="dashed", lwd = 0.5, colour ="black") +  
- # ylim(-1, 2) + xlim(0, 1.5) +
-  #geom_abline(intercept = mr_host_range_link_ratio$beta[[1]], slope = mr_host_range_link_ratio$beta[[2]], alpha = 0.7, linetype = "dashed", size = 0.5) +
   labs(x = "Maturity", y = "lnRR (effect isze)", size = "Precision") +
   #guides(fill = "none", colour = "none") +
   # themses
