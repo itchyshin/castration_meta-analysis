@@ -85,14 +85,17 @@ pacman::p_load(tidyverse,
                clubSandwich,
                MuMIn,
                png,
-               grid
+               grid,
+               here
 )
+
+# need for metafor to understand MuMin 
+eval(metafor:::.MuMIn)
 ```
 
+# Datasets
 
-# Datasets 
-
-- I will put two data sets here to show with meta-data
+-   I will put two data sets here to show with meta-data
 
 ## Main dataset and meta-data
 
@@ -120,8 +123,6 @@ pacman::p_load(tidyverse,
 #   kable_styling("striped", position = "left") %>%
 #   scroll_box(width = "100%", height = "500px")
 ```
-
-
 
 ```{r}
 
@@ -168,8 +169,8 @@ lnrrm <- function(m1, m2, n1, n2, cv21, cv22) {
 
 ```
 
-
 ### Main data
+
 ```{r}
 #dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
 dat_full <- read_csv(here("data", "data_19092021.csv"), na = c("", "NA"))
@@ -257,14 +258,13 @@ dat_long <- rbind(dat1, dat2)
 # putt 2 new column
 
 dat_long$Obs <- factor(1:dim(dat_long)[[1]])
-dat_long$Comp_type <- as.factor(rep(c("both_normal", "one_neutured"), each = dim(dat_long)[[1]]/2))
+dat_long$Comp_type <- as.factor(rep(c("both_normal", "one_castrated"), each = dim(dat_long)[[1]]/2))
 
 
 dim(dat_long)
 
 
 ```
-
 
 ### Sub-data
 
@@ -281,8 +281,8 @@ sdat$Phylogeny <- sub(" ", "_",  sdat$Species_Latin)
 sdat$Effect_type <- effect_type_s
 ```
 
-
 #### Calcuating effect size
+
 ```{r}
 # we create a longer data format
 
@@ -332,7 +332,7 @@ sdat_long$Comp_type <- as.factor(rep(c("both_normal", "both_castrated"), each = 
 
 # Meta-analysis (the same sex contrasts)
 
-## Main model 
+## Main model
 
 ```{r}
 # shared control 
@@ -366,8 +366,151 @@ orchard_plot(mod, mod = "Int", xlab = "log response ratio (lnRR)")
 
 ```
 
+## Species-specific effects
 
-# Meta-regression (the same sex contrasts) 
+```{r, eval=FALSE}
+# getting blups (best linear predictors from the model)
+# getting blups (best linear predictors from the model)
+blups <- ranef(mod) 
+t.spp <- blups$Species_Latin # this needs to be added
+t.phy <- blups$Phylogeny 
+t.study <- blups$Study # study
+t.spp <- rownames_to_column(t.spp, var = "Species")
+t.phy <- rownames_to_column(t.phy, var = "Species")
+t.study <-  rownames_to_column(t.study, var = "Study") # study
+
+# average cultivar
+colnames(t.spp) <- c("Species", "Deviation", "SE", "Lower_bound", "Upper_bound")
+colnames(t.phy) <- c("Species", "Deviation", "SE", "Lower_bound", "Upper_bound")
+colnames(t.study) <- c("Study", "Deviation", "SE", "Lower_bound", "Upper_bound")
+
+# sorting match between study and species
+dat %>% group_by(Study) %>% summarise(Species_Latin = unique(Species_Latin)) -> dat_match
+
+dat_match$Species_Latin 
+index <- match(dat_match$Species_Latin , t.spp$Species)
+
+
+# knitr::kable(t.cultivar) col.names = c(’Cultivar’,
+# ’Deviation’, ’SE’, ’Lower bound’, ’Upper bound’))
+spp.mean <- rep(mod$b, dim(t.spp)[1]) + t.spp$Deviation + t.phy$Deviation
+spp.se <- sqrt(mod$se^2 + t.spp$SE^2 +  t.phy$SE^2) 
+spp.lb <- spp.mean - spp.se * qnorm(0.975) 
+spp.ub <- spp.mean + spp.se * qnorm(0.975)
+t.spp2 <- tibble(Species = t.spp$Species, Mean = spp.mean, SE = spp.se, Lower_bound = spp.lb, Upper_bound = spp.ub) %>% arrange(Species)
+
+# study wise 
+
+study.mean <- rep(mod$b, dim(t.study)[1]) + t.spp$Deviation[index] + t.phy$Deviation[index] + t.study$Deviation
+study.se <- sqrt(mod$se^2 + t.spp$SE[index]^2 +  t.phy$SE[index]^2 + t.study$SE^2) 
+study.lb <- study.mean - study.se * qnorm(0.975) 
+study.ub <- study.mean + study.se * qnorm(0.975)
+t.study2 <- tibble(Study = t.study$Study, Species = t.spp$Species[index], 
+                   Study_Spp = as.factor(paste(Study, Species, sep = "_")), Mean = study.mean, 
+                   SE = study.se, Lower_bound = study.lb, Upper_bound = study.ub) %>% arrange(Species)
+
+# plotting
+
+# getting all photos 
+# reading in photos
+filenames <- list.files("icons", pattern=".png", full.names=TRUE)
+ldf <- lapply(filenames, readPNG)
+names(ldf) <- substr(filenames, 7, 60)
+#name <- substr(filenames, 7, 60)
+
+
+spp.plot <- ggplot(data = t.spp2, aes(x = Mean, y = Species)) +
+  geom_errorbarh(aes(xmin = Lower_bound, xmax = Upper_bound),  
+                 height = 0, show.legend = FALSE, size = 0.5, alpha = 0.6) +
+  geom_vline(xintercept = 0, linetype = 2, colour = "black", alpha = 0.5) +
+  geom_vline(xintercept = mod$b, linetype = 1, colour = "red") +
+  geom_point(aes(fill = Species), size = 3, shape = 21) + 
+  xlim(-0, 0.25) +
+  theme_bw() +
+  labs(x = "lnRR (effect size)", y = "") + 
+  theme(legend.position= c(0.99, 0.01), legend.justification = c(1, 0)) +
+  theme(legend.title = element_text(size = 9)) +
+  theme(legend.direction="horizontal") +
+  theme(axis.text.y = element_blank()) +
+  theme(axis.text.y = element_text(size = 10, colour ="black",
+                                   hjust = 0.5)) +
+  guides(fill = "none")  + 
+  #annotation_custom(rasterGrob(ldf), xmin = rep(0.01, 14), xmax = rep(0.05, 14), ymin = seq(0.5, 13.5, 1), ymax = seq(1.5, 14.5, 1)) 
+  annotation_custom(rasterGrob(ldf[[1]]), xmin = 0.01, xmax = 0.05, ymin = 0.5, ymax = 1.5) +
+  annotation_custom(rasterGrob(ldf[[2]]), xmin = 0.01, xmax = 0.05, ymin = 1.5, ymax = 2.5) +
+  annotation_custom(rasterGrob(ldf[[3]]), xmin = 0.01, xmax = 0.05, ymin = 2.5, ymax = 3.5) +
+  annotation_custom(rasterGrob(ldf[[4]]), xmin = 0.01, xmax = 0.05, ymin = 3.5, ymax = 4.5) +
+  annotation_custom(rasterGrob(ldf[[5]]), xmin = 0.01, xmax = 0.05, ymin = 4.5, ymax = 5.5) +
+  annotation_custom(rasterGrob(ldf[[6]]), xmin = 0.01, xmax = 0.05, ymin = 5.5, ymax = 6.5) +
+  annotation_custom(rasterGrob(ldf[[7]]), xmin = 0.01, xmax = 0.05, ymin = 6.5, ymax = 7.5) +
+  annotation_custom(rasterGrob(ldf[[8]]), xmin = 0.01, xmax = 0.05, ymin = 7.5, ymax = 8.5) +
+  annotation_custom(rasterGrob(ldf[[9]]), xmin = 0.01, xmax = 0.05, ymin = 8.5, ymax = 9.5) +
+  annotation_custom(rasterGrob(ldf[[10]]), xmin = 0.01, xmax = 0.05, ymin = 9.5, ymax = 10.5) +
+  annotation_custom(rasterGrob(ldf[[11]]), xmin = 0.01, xmax = 0.05, ymin = 10.5, ymax = 11.5) +
+  annotation_custom(rasterGrob(ldf[[12]]), xmin = 0.01, xmax = 0.05, ymin = 11.5, ymax = 12.5) +
+  annotation_custom(rasterGrob(ldf[[13]]), xmin = 0.01, xmax = 0.05, ymin = 12.5, ymax = 13.5) +
+  annotation_custom(rasterGrob(ldf[[14]]), xmin = 0.01, xmax = 0.05, ymin = 13.5, ymax = 14.5)
+
+spp.plot
+
+# alternative way of inserting fig
+
+
+```
+
+
+```{r, fig.width= 20, fig.cap = "Species-specific effects: the red line indicates the overall effect - very little variation among species"}
+knitr::include_graphics(here::here("figs", "fig_spp.png"))
+
+#![Species-specific effects: the red line indicates the overall effect - very little variation among species](figs/fig_spp.png){width="100%"}
+```
+
+## Study-specific effect
+
+```{r, eval = FALSE}
+study.plot <- ggplot(data = t.study2, aes(x = Mean, y = fct_reorder(Study, Species))) +
+  geom_errorbarh(aes(xmin = Lower_bound, xmax = Upper_bound),  
+                 height = 0, show.legend = FALSE, size = 0.5, alpha = 0.6) +
+  geom_vline(xintercept = 0, linetype = 2, colour = "black", alpha = 0.5) +
+  geom_vline(xintercept = mod$b, linetype = 1, colour = "red") +
+  geom_point(aes(fill = Species), size = 3, shape = 21) + 
+  xlim(-0.5, 0.8) +
+  theme_bw() +
+  labs(x = "lnRR (effect size)", y = "") + 
+  theme(legend.position= c(0.99, 0.01), legend.justification = c(1, 0)) +
+  theme(legend.title = element_text(size = 9)) +
+  theme(legend.direction="horizontal") +
+  theme(axis.text.y = element_blank()) +
+  theme(axis.text.y = element_text(size = 10, colour ="black",
+                                   hjust = 0.5)) +
+  guides(fill = "none")  + 
+  #annotation_custom(rasterGrob(ldf), xmin = rep(0.01, 14), xmax = rep(0.05, 14), ymin = seq(0.5, 13.5, 1), ymax = seq(1.5, 14.5, 1)) 
+  annotation_custom(rasterGrob(ldf[[1]]), xmin = -0.5, xmax = -0.4, ymin = 1.5, ymax = 3.5) +
+  annotation_custom(rasterGrob(ldf[[2]]), xmin = -0.45, xmax = -0.35, ymin = 3+ 4, ymax = 5 + 4) +
+  annotation_custom(rasterGrob(ldf[[3]]), xmin = -0.5, xmax = -0.4, ymin = 0 + 12, ymax = 2 + 12) +
+  annotation_custom(rasterGrob(ldf[[4]]), xmin = -0.45, xmax = -0.35, ymin = 2 + 14, ymax = 4 + 14) +
+  annotation_custom(rasterGrob(ldf[[5]]), xmin = -0.5, xmax = -0.4, ymin = 2.5 + 18, ymax = 4.5 + 18) +
+  annotation_custom(rasterGrob(ldf[[6]]), xmin = -0.45, xmax = -0.35, ymin = 0.5 + 23, ymax = 2.5 + 23) +
+  annotation_custom(rasterGrob(ldf[[7]]), xmin = -0.5, xmax = -0.4, ymin = 4 + 25, ymax = 6 + 25) +
+  annotation_custom(rasterGrob(ldf[[8]]), xmin = -0.45, xmax = -0.35, ymin = 0 + 35, ymax = 2 + 35) +
+  annotation_custom(rasterGrob(ldf[[9]]), xmin = -0.5, xmax = -0.4, ymin = 0.5 + 36, ymax = 2.5 + 36) +
+  annotation_custom(rasterGrob(ldf[[10]]), xmin = -0.45, xmax = -0.35, ymin = 0 + 38, ymax = 2 + 38) +
+  annotation_custom(rasterGrob(ldf[[11]]), xmin = -0.5, xmax = -0.4, ymin = 0 + 39, ymax = 2+ 39) +
+  annotation_custom(rasterGrob(ldf[[12]]), xmin = -0.45, xmax = -0.35, ymin = 0.5 + 40, ymax = 2.5 + 40) +
+  annotation_custom(rasterGrob(ldf[[13]]), xmin = -0.5, xmax = -0.4, ymin = 3.5 + 42, ymax = 5.5 + 42) +
+  annotation_custom(rasterGrob(ldf[[14]]), xmin = -0.45, xmax = -0.35, ymin = 0 + 49, ymax = 2 + 49)
+
+study.plot
+
+```
+
+```{r,fig.width= 20, fig.cap = "Study-specific effects: the red line indicates the overall effect - much variation exist among studies"}
+knitr::include_graphics(here::here("figs", "fig_study.png"))
+
+#![Species-specific effects: the red line indicates the overall effect - very little variation among species](figs/fig_spp.png){width="100%"}
+```
+
+# Meta-regression (the same sex contrasts)
 
 ## Model function
 
@@ -391,7 +534,6 @@ mod_func <-  function(formula) {
 
 ```
 
-
 ## Plotting functions
 
 ```{r}
@@ -402,9 +544,12 @@ o_plot <- function(mod, moderator = "Int"){
 }
 
 # bubble plot
-b_plot <- function(data, mod, moderator = "Maturity_at_treatment_ordinal"){
+b_plot <- function(data, mod){
+  
+  pred_sex_matuarity <- predict(mod)
+  
   data %>% 
-  filter(!is.na(print("moderator", quote = F)))  %>% # getting ride of NA values
+  filter(!is.na(print(Maturity_at_treatment_ordinal, quote = F)))  %>% # getting ride of NA values
   mutate(ymin = pred_sex_matuarity$ci.lb, 
          ymax = pred_sex_matuarity$ci.ub, 
          ymin2 = pred_sex_matuarity$cr.lb,
@@ -412,10 +557,10 @@ b_plot <- function(data, mod, moderator = "Maturity_at_treatment_ordinal"){
          pred = pred_sex_matuarity$pred) %>% 
   ggplot(aes(x = Maturity_at_treatment_ordinal, y = yi, size = sqrt(1/vi), group = Sex)) +
   geom_point(aes( col = Sex)) +
-  geom_abline(slope = (0.0274 -0.1194),
-              intercept = 0.4547, col = "#00BFC4") +
-  geom_abline(slope = (0.0274),
-              intercept = 0.1396, col = "#F8766D") +
+  geom_abline(slope = mod$beta[[3]] + mod$beta[[4]],
+              intercept = mod$beta[[1]]+mod$beta[[2]], col = "#00BFC4") +
+  geom_abline(slope = (mod$beta[[3]]),
+              intercept = mod$beta[[1]], col = "#F8766D") +
   
   geom_smooth(aes(y = ymin, col = Sex), method = "loess", alpha = 0.2, lty = "dotted", lwd = 0.25,se = F) + 
   labs(x = "Maturity", y = "lnRR (effect isze)", size = "Precision") +
@@ -431,7 +576,6 @@ b_plot <- function(data, mod, moderator = "Maturity_at_treatment_ordinal"){
 
 ```
 
-
 ## Uni-moderator models {.tabset .tabset_fade .tabset_pills}
 
 ### Sex difference (`Sex`)
@@ -439,19 +583,300 @@ b_plot <- function(data, mod, moderator = "Maturity_at_treatment_ordinal"){
 ```{r}
 mod_sex <- mod_func(formula = ~ Sex-1)
 summary(mod_sex)
+# contrast
+mod_sex1 <- mod_func(formula = ~ Sex)
+summary(mod_sex1)
+r2_ml(mod_sex1)
+# orchard plot
 o_plot(mod_sex, moderator = "Sex")
 ```
 
-
-### Enviormental (`Wild_or_semi_wild`)
+### Environmental (`Wild_or_semi_wild`)
 
 ```{r}
 mod_env <- mod_func(formula = ~ Wild_or_semi_wild-1)
 summary(mod_env)
+# contrast
+mod_env1 <- mod_func(formula = ~ Wild_or_semi_wild)
+summary(mod_env1)
+r2_ml(mod_env1)
+# orchard plot
 o_plot(mod_env, moderator = "Wild_or_semi_wild")
 ```
 
-### Gonad Removal
+### Gonad Removal (`Sex_Gonads`)
+
+```{r}
+# creating a new variable Sex + Gonad because 
+
+dat$Sex_Gonads <- paste(dat$Sex, dat$Gonads_removed, sep = "_")
+
+mod_rem <- mod_func(formula = ~ Sex_Gonads-1)
+summary(mod_rem)
+# contrast
+mod_rem1 <- mod_func(formula = ~ Sex_Gonads)
+summary(mod_rem1)
+r2_ml(mod_rem1)
+# orchard plot
+o_plot(mod_rem, moderator = "Sex_Gonads")
+```
+
+### Controlled treatment (`Controlled_treatments`)
+
+```{r}
+mod_con <- mod_func(formula = ~ Controlled_treatments-1)
+summary(mod_con)
+# contrast
+mod_con1 <- mod_func(formula = ~ Controlled_treatments)
+summary(mod_con1)
+r2_ml(mod_con1)
+# orchard plot
+o_plot(mod_con, moderator = "Controlled_treatments")
+```
+
+### Type of effect sizes (`Effect_type`)
+
+```{r}
+mod_eff <- mod_func(formula = ~ Effect_type-1)
+summary(mod_eff)
+# contrast
+mod_eff1 <- mod_func(formula = ~ Effect_type)
+summary(mod_eff1)
+r2_ml(mod_eff1)
+# orchard plot
+o_plot(mod_eff, moderator = "Effect_type")
+```
+
+### Matuarity (`Maturity_at_treatment_ordinal`)
+
+```{r}
+# just pure effect
+mod_mat <- mod_func(formula = ~ Maturity_at_treatment_ordinal)
+summary(mod_mat)
+r2_ml(mod_mat)
+# interaction with Sex
+mod_sex_mat <- mod_func(formula = ~ Sex*Maturity_at_treatment_ordinal)
+summary(mod_sex_mat)
+r2_ml(mod_mat)
+# bubble plot
+b_plot(data = dat, mod = mod_sex_mat)
+```
+
+## Mulit-moderator models
+
+### Full model
+
+```{r}
+
+mod_full <- mod_func(formula = ~ Sex + Sex_Gonads + Sex*Controlled_treatments +Sex*Maturity_at_treatment_ordinal + Sex*Wild_or_semi_wild)
+summary(mod_full)
+r2_ml(mod_full)
+```
+
+### AIC model selection
+
+```{r, eval = F}
+
+#res_mod_full <- dredge(mod_full, trace=2)
+res_mod_full <- dredge(mod_full, trace=2)
+
+saveRDS(res_mod_full, file = here("Rdata", "res_mod_full"))
+```
+
+```{r}
+res_mod_full <- readRDS(file = here("Rdata", "res_mod_full"))
+
+# delta AIC = 2
+res_mod_full2<- subset(res_mod_full, delta <= 2, recalc.weights=FALSE)
+importance(res_mod_full2)
+
+# the best model according to the delta 2
+best2 <- mod_func(formula = ~ Controlled_treatments + Wild_or_semi_wild)
+
+# delta AIC = 6
+res_mod_full6<- subset(res_mod_full, delta <= 6, recalc.weights=FALSE)
+importance(res_mod_full6)
+
+importance(res_mod_full)
+
+# the best model according to delta 6
+best6 <- mod_func(formula = ~ Sex + Controlled_treatments + Wild_or_semi_wild)
 
 
+```
 
+# Sensitivity analysis 
+
+## Publication bais analysis {.tabset .tabset_fade .tabset_pills}
+
+### Funnel plot
+
+```{r}
+# raw funnel plot
+funnel(mod)
+
+# residual funnel plot
+
+funnel(best2)
+#funnel(best6)
+
+```
+
+
+### Small-study effect: uni-moderaotor
+
+```{r}
+
+dat$Effective_N <- 1/dat$Sample_size_sterilization + 1/dat$Sample_size_control
+
+egger_uni <- mod_func(formula = ~ sqrt(Effective_N))
+egger_uni2 <- mod_func(formula = ~ Effective_N)
+
+summary(egger_uni)
+summary(egger_uni2)
+```
+
+
+### Decline effect (time lag bias): uni-moderator
+
+```{r}
+
+dat$Year <- as.numeric(str_extract(as.character(dat$Study),"[:digit:][:digit:][:digit:][:digit:]"))
+
+decline_uni <- mod_func(formula = ~ Year)
+summary(decline_uni)
+```
+
+
+### Mulit-moderator model for both the small-study & decline effects
+
+```{r}
+
+dat$cYear <- scale(dat$Year, scale = F)
+
+pub_bias <- mod_func(formula = ~ Effective_N + Controlled_treatments + Wild_or_semi_wild + cYear)
+  
+summary(pub_bias)
+
+prep <- qdrg(object = pub_bias, data = as.data.frame(dat), at = list(Effective_N = 0, cYear = 0))
+
+
+# res<-marginal_means(model = pub_bias, data = dat, mod="1", weights = "prop") 
+# res$mod_table
+
+# equal averaging
+res1 <- emmeans(prep, specs = "1", df = pub_bias$ddf, weights = "equal")
+res1
+
+# proportional to what we have 
+res2 <- emmeans(prep, specs = "1", df = pub_bias$ddf, weights = "prop")
+res2
+```
+
+## Leave-one-out analysis
+
+```{r}
+# TODO
+# function to do this analysis
+dat$Study_ID <- as.factor(dat$Study_ID)
+
+LeaveOneOut_effectsize <- list()
+for(i in 1:length(levels(dat$Study_ID))){
+  LeaveOneOut_effectsize[[i]] <- rma.mv(yi = lnRR_Ea, V = lnRRV_E, 
+                                        random = list(~1 | Study_ID,~1| ES_ID, ~1 | Strain), 
+                                        method = "REML", data = dat[dat$Study_ID
+                                                                    != levels(dat$Study_ID)[i], ])}
+
+
+# writing function for extracting est, ci.lb, and ci.ub from all models
+est.func <- function(mod_E0){
+  df <- data.frame(est = mod_E0$b, lower = mod_E0$ci.lb, upper = mod_E0$ci.ub)
+  return(df)
+}
+
+
+#using dplyr to form data frame
+MA_CVR_E <- lapply(LeaveOneOut_effectsize, function(x) est.func(x))%>% bind_rows %>% mutate(left_out = levels(dat$Study_ID))
+
+
+saveRDS(MA_CVR_E,file = here("Rdata", "MA_CVR_E.rds"))
+#telling ggplot to stop reordering factors
+MA_CVR_E <- readRDS(file = here("Rdata", "MA_CVR_E.rds"))
+
+MA_CVR_E$left_out<- as.factor(MA_CVR_E$left_out)
+MA_CVR_E$left_out<-factor(MA_CVR_E$left_out, levels = MA_CVR_E$left_out)
+
+
+#plotting
+leaveoneout_E <- ggplot(MA_CVR_E) +
+  geom_hline(yintercept = 0, lty = 2, lwd = 1) +
+  geom_hline(yintercept = mod_E0$ci.lb, lty = 3, lwd = 0.75, colour = "black") +
+  geom_hline(yintercept = mod_E0$b, lty = 1, lwd = 0.75, colour = "black") +
+  geom_hline(yintercept = mod_E0$ci.ub, lty = 3, lwd = 0.75, colour = "black") +
+  geom_pointrange(aes(x = left_out, y = est, ymin = lower, ymax = upper)) +
+  xlab("Study left out") + 
+  ylab("lnRR, 95% CI") + 
+  coord_flip() +
+  theme(panel.grid.minor = element_blank())+
+  theme_bw() + theme(panel.grid.major = element_blank()) +
+  theme(panel.grid.minor.x = element_blank() ) +
+  theme(axis.text.y = element_text(size = 6))
+
+leaveoneout_E
+
+dat$Study_ID <- as.integer(dat$Study_ID)
+
+
+```
+
+
+# Meta-regression (different sex contrasts)
+
+## Contrasts based different sexes {.tabset .tabset_fade .tabset_pills}
+
+### Comparing M/F or F/M vs. M$\star$/F or F$\star$/M
+
+```{r}
+# variance covariance matrix
+V_matrix_long <- impute_covariance_matrix(vi = dat_long$vi, cluster = dat_long$Shared_control, r = 0.5)
+
+# we can run - some heteroscad models
+# this does not improve model
+mod_comp <-  rma.mv(yi, V = V_matrix_long, 
+                 mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+summary(mod_comp) 
+
+orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", angle = 0)
+
+```
+
+### Separating by sex (M/F or F/M vs. M$\star$/F or F$\star$/M)
+
+```{r}
+# as interaction
+dat_long$Comp_type_Sex <- paste(dat_long$Comp_type, dat_long$Sex, sep = "_")
+
+mod_comp_sex <-  rma.mv(yi, V = vi, mod = ~ Comp_type_Sex -1 , random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+summary(mod_comp_sex) 
+
+orchard_plot(mod_comp_sex, mod = "Comp_type_Sex", xlab = "log response ratio (lnRR)", angle = 0)
+```
+
+### Comparing F/M vs. F$\star$/M$\star$
+
+```{r}
+# VCV matrix
+V_matrix_long <- impute_covariance_matrix(vi = sdat_long$vi, cluster = sdat_long$Shared_control, r = 0.5)
+
+# correlaiton matrix for phylogeny
+# tree <- read.tree(here("data/tree_rotl.tre"))
+# tree <- compute.brlen(tree)
+# cor_tree <- vcv(tree, corr = TRUE)
+
+# this does not improve model
+mod_comp2 <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs), R = list(Phylogeny = cor_tree), data = sdat_long, test = "t")
+summary(mod_comp2) 
+
+orchard_plot(mod_comp2, mod = "Comp_type", xlab = "log response ratio (lnRR)", angle = 0)
+
+```
