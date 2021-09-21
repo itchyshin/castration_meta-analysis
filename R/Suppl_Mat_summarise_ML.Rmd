@@ -29,10 +29,10 @@ subtitle: Supplementary Material
 #always_allow_html: true
 ---
 
-ML NOTEs: 
- - I kept top chunks and added new ones for summarising the dataset AFTER some pre-processing (by SN). 
- - Data from "dat_14092021.csv" file
- - custom functions could be moved to an external source R file
+ML NOTES:  
+ - I kept top chunks and added new ones for summarising the dataset AFTER some pre-processing (by SN)  
+ - Data from "dat_19092021.csv" file  
+ - custom functions could be moved to an external source R file  
 
 ```{r setup, include = FALSE}
 #kniter seetting
@@ -48,7 +48,7 @@ tidy = TRUE
 rm(list=ls())
 ```
 
-# Setting-ups
+# Setting-up
 
 ## Loading packages
 
@@ -132,12 +132,12 @@ lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
 
 ```
 
-### Datasets  
-  
-- Shinichi will put two data sets here to show with meta-data?   
+### Datasets   
 
-(Main dataset and meta-data)  
-```{r, eval =FALSE}
+[Shinichi will put two data sets here to show with meta-data?]   
+
+(Main dataset and meta-data)   
+```{r, eval = FALSE}
 # # getting the data and formating some variables (turning chraracter vectors to factors)
 # read_csv(here("data/lit_search.csv"), na = "NA") %>%
 #    mutate_if(is.character, as.factor) %>%  kable("html") %>%
@@ -163,11 +163,11 @@ lnrrm <- function(m1, m2, n1, n2, sd1, sd2) {
 ```
 
 
-### Data processing -for main data
+### Data processing - for main data  
 
 ```{r load main data}
 # loading data ####
-dat_full1 <- read_csv(here("data", "data_14092021.csv"), na = c("", "NA"))
+dat_full1 <- read_csv(here("data", "data_19092021.csv"), na = c("", "NA"))
 names(dat_full1)
 #dim(dat_full1) #118 rows
 
@@ -192,11 +192,11 @@ dat$Effect_type <- as.factor(effect_type)
 dat$Year <- as.numeric(gsub(".*?([0-9]+).*", "\\1", dat$Study)) #equivalent to parse_number(dat$Study)but does not create problems for NA  
 ```
 
-## Summarise the dataset
+## Summarise the dataset  
 
-Note that ES have not been calculated yet (use prelim.R code to do so).
+Note that ES have not been calculated yet (use prelim.R code to do so).  
 
-Look at the overall pattern of missing data.
+Look at the overall pattern of missing data.  
 
 ```{r missing data, echo = FALSE}
 #vis_miss(dat) #mostly data is missing at comment fields
@@ -208,20 +208,20 @@ vis_miss(dat) +
 ```
 
 
-### General summary  
+### General summary   
 
-- Number of effect sizes: `r length(unique(dat$Effect_ID))`   
-- Number of studies: `r length(unique(dat$Study))`   
-- Publication years: from `r min(dat$Year, na.rm = TRUE)` to `r max(dat$Year, na.rm = TRUE)`    
-- Simmple list of studies as short references: `r unique(dat$Study)`   
-- Number of species: `r length(unique(dat$Species_Latin))`    
-- Simple list of species Latin names (also stored in "Phylogeny" variable): `r unique(dat$Species_Latin)`    
-- Number of data points for females: `r length(which(dat$Sex=="Female"))`, and data points form males: `r length(which(dat$Sex=="Male"))`   
+ - Number of effect sizes: `r length(unique(dat$Effect_ID))`   
+ - Number of studies: `r length(unique(dat$Study))`   
+ - Publication years: from `r min(dat$Year, na.rm = TRUE)` to `r max(dat$Year, na.rm = TRUE)`    
+ - Simple list of studies as short references: `r unique(dat$Study)`     
+ - Number of species: `r length(unique(dat$Species_Latin))`     
+ - Simple list of species Latin names (also stored in "Phylogeny" variable): `r unique(dat$Species_Latin)`    
+ - Number of data points for females: `r length(which(dat$Sex=="Female"))`, and data points form males: `r length(which(dat$Sex=="Male"))`    
  
 
 ```{r key variables simple tables, eval = FALSE}
 #Key variables: Sex, Gonads_removed, Wild_or_semi_wild, Controlled_treatments, Effect_type, Maturity_at_treatment_ordinal (ordinal with NA), 
-names(dat)
+#names(dat)
 
 #check how crossed with Sex (relevant to both sexes or not?)
 table(dat$Species_Latin, dat$Sex)
@@ -256,9 +256,9 @@ table(dat$Controlled_treatments, dat$Effect_type)
 table(dat$Maturity_at_treatment_ordinal, dat$Effect_type)
 ```
 
-### Key predictors (moderators)  
+### Key predictors (moderators)   
 
-Visualise missing data in 6 key variables (moderators):  
+Visualise missing data in 6 key variables (moderators):   
  - Sex,   
  - Wild_or_semi_wild,   
  - Maturity_at_treatment_ordinal,  
@@ -287,9 +287,9 @@ plot(GKmatrix)
 ```
 
 
-Alluvial diagrams for key predictor variables (variables)moderators) - two groups of 3 moderators, grouped by similarity.
+Alluvial diagrams for key predictor variables (moderators) - two groups of 3 moderators, grouped by similarity:  
 
- A. For Sex, Gonads_removed, Maturity_at_treatment_ordinal (changed NA to 0)
+ A. For Sex, Gonads_removed, Maturity_at_treatment_ordinal (changed NA to 0)  
 
 
 ```{r alluvial plots A, results = 'hide'}
@@ -374,7 +374,7 @@ ggplot(data = freq_1,
   ggtitle("A. Subjects sex, manipulation and maturity ")
 ```
 
- B. For Wild_or_semi_wild, Controlled_treatments, Effect_type:   
+ B. For Wild_or_semi_wild, Controlled_treatments, Effect_type (Outcome type):   
 
 ```{r alluvial plots B, results = 'hide'}
 # create a frequency table for next 3 moderator variables
@@ -399,3 +399,32 @@ ggplot(data = freq_2,
 
 #names(dat_key)
 ```
+
+
+C. For Gonads_removed, Wild_or_semi_wild, Controlled_treatments, Effect_type (Outcome type):   
+
+```{r alluvial plots C, results = 'hide'}
+# create a frequency table for next 3 moderator variables
+freq_3 <- as.data.frame(table(dat$Gonads_removed, dat$Wild_or_semi_wild, dat$Effect_type)) %>% rename(Gonads_removed = Var1, Wild_or_semi_wild = Var2, Effect_type = Var3)
+is_alluvia_form(as.data.frame(freq_3), axes = 1:3, silent = TRUE)
+#freq_2 %>% filter(Freq != 0) %>% arrange(desc(Freq)) #collapesd table of values, without 0s
+
+ggplot(data = freq_3,
+  aes(axis1 = Gonads_removed, axis2 = Wild_or_semi_wild, axis3 = Effect_type, y = Freq)) +
+  geom_alluvium(aes(fill = Gonads_removed)) +
+  geom_stratum(aes(fill = Gonads_removed))+
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+#  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 3),
+        axis.title.x = element_text(),
+        axis.text.x = element_text(face="bold")) +
+  scale_x_discrete(limits = c("Gonads_removed", "Wild_or_semi_wild", "Outcome type"), expand = c(0.15, 0.05), position = "top") +
+  scale_fill_brewer(palette = "Set3") +
+  ggtitle("C. Manipulation, subject and outcome types")
+
+#names(dat_key)
+```
+
+This just shows a different combination of predictor variables (moderators) from plots A and B.      
