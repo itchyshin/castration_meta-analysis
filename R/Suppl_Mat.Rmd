@@ -775,7 +775,7 @@ res2
 
 ## Leave-one-out analysis
 
-```{r}
+```{r, eval = FALSE}
 # TODO
 # function to do this analysis
 dat$Study_ID <- as.factor(dat$Study_ID)
