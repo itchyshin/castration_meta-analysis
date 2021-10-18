@@ -73,9 +73,9 @@ pacman::p_load(tidyverse,
                pander,
                stringr,
                ape,
+               here,
                kableExtra,
                patchwork,
-               here,
                lme4,
                readxl,
                metaAidR,
@@ -361,6 +361,8 @@ mod <-  rma.mv(yi, V = V_matrix, mod = ~ 1,
                control=list(optimizer="optim", optmethod="Nelder-Mead")
                )
 summary(mod) 
+
+round(100*i2_ml(mod),2)
 
 orchard_plot(mod, mod = "Int", xlab = "log response ratio (lnRR)")
 
