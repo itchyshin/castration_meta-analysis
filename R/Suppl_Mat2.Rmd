@@ -99,7 +99,7 @@ eval(metafor:::.MuMIn)
 
 ## Main dataset and meta-data
 
-```{r, eval =FALSE}
+```{r, eval = FALSE}
 # # getting the data and formating some variables (turning chraracter vectors to factors)
 # read_csv(here("data/lit_search.csv"), na = "NA") %>%
 #    mutate_if(is.character, as.factor) %>%  kable("html") %>%
@@ -197,6 +197,8 @@ dat$Effect_type <- effect_type
 
 # key variables
 names(dat)
+unique(dat$Species_Latin)
+dat$Species_Latin <- gsub("Macaca Fascicularis", "Macaca fascicularis", dat$Species_Latin) #fix a typo in species name
 ```
 
 #### Calcuating effect size for the main data
@@ -262,8 +264,6 @@ dat_long$Comp_type <- as.factor(rep(c("both_normal", "one_castrated"), each = di
 
 
 dim(dat_long)
-
-
 ```
 
 ### Sub-data
@@ -329,6 +329,71 @@ sdat_long$Obs <- factor(1:dim(sdat_long)[[1]])
 sdat_long$Comp_type <- as.factor(rep(c("both_normal", "both_castrated"), each = dim(sdat_long)[[1]]/2))
 
 ```
+
+#### Building phylogenetic tree
+
+```{r get species list, message = FALSE, echo = TRUE, eval = TRUE, warning = FALSE}
+names(dat)
+myspecies <- as.character(unique(dat$Species_Latin)) #get list of species
+#str_sort(myspecies) #visual check
+#length(myspecies) #23 species
+#length(unique(myspecies)) #23 unique species names
+```
+
+Using *rotl* package to retrieve synthetic species tree from Open Tree of Life: Rotl is an R package (https://peerj.com/preprints/1471/) allowing access to synthetic phylogenetic tree available at Open Tree of Life database (https://opentreeoflife.org/).   
+
+```{r rotl find species, message = FALSE, echo = TRUE, eval = TRUE, warning = FALSE}
+taxa <- tnrs_match_names(names = myspecies)
+dim(taxa) #40 specias - all matched
+table(taxa$approximate_match) #1 approximate match
+taxa[taxa$approximate_match == TRUE, ] ##lamperta fluviatilis (search_string) will be presented as Perca fluviatilis (uniquw_name)
+```
+
+Get the initial tree.  
+
+```{r rotl species tree, warning = FALSE, results=FALSE}
+tree <- tol_induced_subtree(ott_ids = taxa[["ott_id"]], label_format = "name")  
+# plot(tree, cex=.6, label.offset =.1, no.margin = TRUE) visual check
+```
+
+Check matching species and labels.
+
+```{r re-check tree labels}
+#check overlap and differences with the taxa list
+intersect(gsub("_"," ", tree$tip.label), myspecies) #22
+setdiff(gsub("_"," ", tree$tip.label), myspecies) # "Perca fluviatilis"  
+setdiff(myspecies, gsub("_"," ", tree$tip.label)) # "Lamperta fluviatilis"
+tree$tip.label <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", tree2$tip.label) #replace with the original name
+
+#re-check overlap and differences with myspecies list
+#intersect(myspecies, tree2$tip.label) #23
+#setdiff(myspecies, tree2$tip.label) #0
+#setdiff(tree2$tip.label, myspecies) #0
+
+#check if the tree is really binary 
+is.binary.tree(tree) #TRUE
+# tree_binary$node.label <- NULL #you can delete internal node labels
+# *NOTE:* no branch lengths are included, they can be created later via simulations.  
+
+write.tree(tree, file="tree_rotl.tre") #save the tree
+
+# *NOTE:* underscores within species names on tree tip labals are added automatically
+# tree <- read.tree(file="plot_cooked_fish_MA.tre") #if you need to read in the tree
+# tree$tip.label <- gsub("_"," ", tree$tip.label) #get rid of the underscores
+# tree$node.label <- NULL #you can delete internal node labels
+```
+
+Plot phylogenetic tree
+
+```{r plot phylogenetic tree, fig.width=10, fig.height=20, echo=TRUE, message=FALSE}
+plot(tree, cex=.6, label.offset =.1, no.margin = TRUE)
+
+# #or plot to pdf
+# pdf(here("figs/rotl_tree.pdf"), width=8, heigh=10)
+# plot(tree, cex=0.6, label.offset =.1, no.margin = TRUE)
+# dev.off()
+```
+
 
 # Meta-analysis (the same sex contrasts)
 
