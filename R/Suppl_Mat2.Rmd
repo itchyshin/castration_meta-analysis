@@ -270,8 +270,8 @@ dim(dat_long)
 ### Sub-data
 
 ```{r}
-sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
-
+#sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
+sdat <- read_csv(here("data", "data2_19042022.csv"), na = c("", "NA")) 
 effect_type_s <- ifelse(str_detect(sdat$Lifespan_parameter, "Me"), "longevity", "mortality")
 
 
@@ -624,8 +624,9 @@ summary(mod_sex)
 mod_sex1 <- mod_func(formula = ~ Sex)
 summary(mod_sex1)
 r2_ml(mod_sex1)
+
 # orchard plot
-#test <- mod_results(mod_sex1, mod = "Sex", group = "Study", data = dat)
+test <- mod_results(mod_sex1, mod = "Sex", group = "Study", data = dat)
 orchard_plot(mod_sex1, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
 ```
 
@@ -956,5 +957,10 @@ V_matrix_long <- impute_covariance_matrix(vi = sdat_long$vi, cluster = sdat_long
 mod_comp2 <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type - 1, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs),data = sdat_long, test = "t")
 summary(mod_comp2) 
 
-orchard_plot(mod_comp2, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = dat_long, cb = F, angle = 45)
+mod_comp2b <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs),data = sdat_long, test = "t")
+summary(mod_comp2b) 
+
+#robust(mod_comp2b, cluster = sdat_long$Shared_control)
+
+orchard_plot(mod_comp2, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = sdat_long, angle = 45)
 ```
