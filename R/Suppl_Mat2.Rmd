@@ -173,10 +173,12 @@ lnrrm <- function(m1, m2, n1, n2, cv21, cv22) {
 
 ```{r}
 #dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
-dat_full <- read_csv(here("data", "data_15022022.csv"), na = c("", "NA"))
+#dat_full <- read_csv(here("data", "data_15022022.csv"), na = c("", "NA"))
+dat_full <- read_csv(here("data", "data_19042022.csv"), na = c("", "NA"))
 glimpse(dat_full)
 
 #loading data ####
+# TODO - ask Mike he sill wants to exclude "Vasectomy"
 dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% 
   filter(Type_of_sterilization != "Vasectomy") %>% 
   mutate_if(is.character, as.factor) -> dat
@@ -190,7 +192,7 @@ effect_type <- ifelse(str_detect(dat$Lifespan_parameter, "Me"), "longevity", "mo
 
 
 # effect-level ID
-
+dat$Species_Latin <- gsub("Macaca Fascicularis", "Macaca fascicularis", dat$Species_Latin) #fix a typo in species name
 dat$Effect_ID <- 1:nrow(dat)
 dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin)
 dat$Effect_type <- effect_type
@@ -198,7 +200,6 @@ dat$Effect_type <- effect_type
 # key variables
 names(dat)
 unique(dat$Species_Latin)
-dat$Species_Latin <- gsub("Macaca Fascicularis", "Macaca fascicularis", dat$Species_Latin) #fix a typo in species name
 ```
 
 #### Calcuating effect size for the main data
@@ -332,7 +333,7 @@ sdat_long$Comp_type <- as.factor(rep(c("both_normal", "both_castrated"), each = 
 
 #### Building phylogenetic tree
 
-```{r get species list, message = FALSE, echo = TRUE, eval = TRUE, warning = FALSE}
+```{r get species list, message = FALSE, echo = TRUE, eval = FALSE, warning = FALSE}
 names(dat)
 myspecies <- as.character(unique(dat$Species_Latin)) #get list of species
 #str_sort(myspecies) #visual check
@@ -342,7 +343,7 @@ myspecies <- as.character(unique(dat$Species_Latin)) #get list of species
 
 Using *rotl* package to retrieve synthetic species tree from Open Tree of Life: Rotl is an R package (https://peerj.com/preprints/1471/) allowing access to synthetic phylogenetic tree available at Open Tree of Life database (https://opentreeoflife.org/).   
 
-```{r rotl find species, message = FALSE, echo = TRUE, eval = TRUE, warning = FALSE}
+```{r rotl find species, message = FALSE, echo = TRUE, eval = FALSE, warning = FALSE}
 taxa <- tnrs_match_names(names = myspecies)
 dim(taxa) #40 specias - all matched
 table(taxa$approximate_match) #1 approximate match
@@ -351,19 +352,19 @@ taxa[taxa$approximate_match == TRUE, ] ##lamperta fluviatilis (search_string) wi
 
 Get the initial tree.  
 
-```{r rotl species tree, warning = FALSE, results=FALSE}
+```{r rotl species tree, warning = FALSE, results=FALSE, eval= FALSE, echo = TRUE}
 tree <- tol_induced_subtree(ott_ids = taxa[["ott_id"]], label_format = "name")  
 # plot(tree, cex=.6, label.offset =.1, no.margin = TRUE) visual check
 ```
 
 Check matching species and labels.
 
-```{r re-check tree labels}
+```{r re-check tree labels, eval=F, echo=T}
 #check overlap and differences with the taxa list
 intersect(gsub("_"," ", tree$tip.label), myspecies) #22
 setdiff(gsub("_"," ", tree$tip.label), myspecies) # "Perca fluviatilis"  
 setdiff(myspecies, gsub("_"," ", tree$tip.label)) # "Lamperta fluviatilis"
-tree$tip.label <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", tree2$tip.label) #replace with the original name
+tree$tip.label <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", tree$tip.label) #replace with the original name
 
 #re-check overlap and differences with myspecies list
 #intersect(myspecies, tree2$tip.label) #23
@@ -375,7 +376,7 @@ is.binary.tree(tree) #TRUE
 # tree_binary$node.label <- NULL #you can delete internal node labels
 # *NOTE:* no branch lengths are included, they can be created later via simulations.  
 
-write.tree(tree, file="tree_rotl.tre") #save the tree
+write.tree(tree, file=here("data", "tree_rotl.tre")) #save the tree
 
 # *NOTE:* underscores within species names on tree tip labals are added automatically
 # tree <- read.tree(file="plot_cooked_fish_MA.tre") #if you need to read in the tree
@@ -407,15 +408,15 @@ plot(tree, cex=.6, label.offset =.1, no.margin = TRUE)
 V_matrix <- impute_covariance_matrix(vi = dat$vi, cluster = dat$Shared_control, r = 0.5)
 
 # phylogeny
-
+#dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
 tree <- read.tree(here("data/tree_rotl.tre"))
 
 tree <- compute.brlen(tree)
 cor_tree <- vcv(tree, corr = TRUE)
 
 # checking the match
-unique(dat$Species_Latin)
-as.factor(colnames(cor_tree))
+match(unique(dat$Phylogeny), colnames(cor_tree))
+
 
 # meta-analysis basics
 # phylo model
@@ -432,9 +433,12 @@ mod <-  rma.mv(yi, V = V_matrix, mod = ~ 1,
                )
 summary(mod) 
 
-round(100*i2_ml(mod),2)
+i2_ml(mod) # almost no phylogenetic effect
 
-orchard_plot(mod, mod = "Int", xlab = "log response ratio (lnRR)")
+    #     I2_Total     I2_Phylogeny I2_Species_Latin         I2_Study     I2_Effect_ID 
+    # 99.465653956      0.000228903     44.565114981     34.127163402     20.773146669
+
+orchard_plot(mod, xlab = "log response ratio (lnRR)", group = "Study", data = dat)
 
 ```
 
@@ -588,15 +592,17 @@ knitr::include_graphics(here::here("figs", "fig_study.png"))
 
 ```{r}
 
+# very 
+
 mod_func <-  function(formula) {
         rma.mv(yi, 
                V = V_matrix,
                mod = formula, 
-               random = list(~1|Phylogeny, 
+               random = list(#~1|Phylogeny, 
                              ~1|Species_Latin, 
                              ~1|Study, 
                              ~1|Effect_ID), 
-               R = list(Phylogeny = cor_tree), 
+               #R = list(Phylogeny = cor_tree), 
                data = dat, 
                test = "t",
                sparse = TRUE,
@@ -606,47 +612,6 @@ mod_func <-  function(formula) {
 
 ```
 
-## Plotting functions
-
-```{r}
-
-# orchard plot
-o_plot <- function(mod, moderator = "Int"){
-  orchard_plot(mod, mod = moderator, xlab = "log response ratio (lnRR)", angle = 0)
-}
-
-# bubble plot
-b_plot <- function(data, mod){
-  
-  pred_sex_matuarity <- predict(mod)
-  
-  data %>% 
-  filter(!is.na(print(Maturity_at_treatment_ordinal, quote = F)))  %>% # getting ride of NA values
-  mutate(ymin = pred_sex_matuarity$ci.lb, 
-         ymax = pred_sex_matuarity$ci.ub, 
-         ymin2 = pred_sex_matuarity$cr.lb,
-         ymax2 = pred_sex_matuarity$cr.ub,
-         pred = pred_sex_matuarity$pred) %>% 
-  ggplot(aes(x = Maturity_at_treatment_ordinal, y = yi, size = sqrt(1/vi), group = Sex)) +
-  geom_point(aes( col = Sex)) +
-  geom_abline(slope = mod$beta[[3]] + mod$beta[[4]],
-              intercept = mod$beta[[1]]+mod$beta[[2]], col = "#00BFC4") +
-  geom_abline(slope = (mod$beta[[3]]),
-              intercept = mod$beta[[1]], col = "#F8766D") +
-  
-  geom_smooth(aes(y = ymin, col = Sex), method = "loess", alpha = 0.2, lty = "dotted", lwd = 0.25,se = F) + 
-  labs(x = "Maturity", y = "lnRR (effect isze)", size = "Precision") +
-  #guides(fill = "none", colour = "none") +
-  # themses
-  theme_bw() +
-  theme(legend.position= c(1, 1), legend.justification = c(1, 1)) +
-  theme(legend.direction="horizontal") +
-  #theme(legend.background = element_rect(fill = "white", colour = "black")) +
-  theme(legend.background = element_blank()) +
-  theme(axis.text.y = element_text(size = 10, colour ="black", hjust = 0.5, angle = 90)) 
-}
-
-```
 
 ## Uni-moderator models {.tabset .tabset_fade .tabset_pills}
 
@@ -660,7 +625,8 @@ mod_sex1 <- mod_func(formula = ~ Sex)
 summary(mod_sex1)
 r2_ml(mod_sex1)
 # orchard plot
-o_plot(mod_sex, moderator = "Sex")
+#test <- mod_results(mod_sex1, mod = "Sex", group = "Study", data = dat)
+orchard_plot(mod_sex1, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
 ```
 
 ### Environmental (`Wild_or_semi_wild`)
@@ -673,8 +639,26 @@ mod_env1 <- mod_func(formula = ~ Wild_or_semi_wild)
 summary(mod_env1)
 r2_ml(mod_env1)
 # orchard plot
-o_plot(mod_env, moderator = "Wild_or_semi_wild")
+orchard_plot(mod_env1, mod = "Wild_or_semi_wild", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
 ```
+
+
+### Environmental x Sex (`Sex_Env`)
+
+```{r}
+# TODO - not sure wehther we should include this
+dat$Sex_Env <- paste(dat$Sex, dat$Wild_or_semi_wild, sep = "_")
+
+mod_senv <- mod_func(formula = ~ Sex_Env-1)
+summary(mod_env)
+# contrast
+mod_senv1 <- mod_func(formula = ~ Sex_Env)
+summary(mod_senv1)
+r2_ml(mod_senv1)
+# orchard plot
+orchard_plot(mod_senv1, mod = "Sex_Env", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+```
+
 
 ### Gonad Removal (`Sex_Gonads`)
 
@@ -683,6 +667,8 @@ o_plot(mod_env, moderator = "Wild_or_semi_wild")
 
 dat$Sex_Gonads <- paste(dat$Sex, dat$Gonads_removed, sep = "_")
 
+dat$Sex_Gonads[grep("NA", dat$Sex_Gonads)] <- NA
+
 mod_rem <- mod_func(formula = ~ Sex_Gonads-1)
 summary(mod_rem)
 # contrast
@@ -690,7 +676,7 @@ mod_rem1 <- mod_func(formula = ~ Sex_Gonads)
 summary(mod_rem1)
 r2_ml(mod_rem1)
 # orchard plot
-o_plot(mod_rem, moderator = "Sex_Gonads")
+orchard_plot(mod_rem1, mod = "Sex_Gonads", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
 ```
 
 ### Controlled treatment (`Controlled_treatments`)
@@ -703,7 +689,23 @@ mod_con1 <- mod_func(formula = ~ Controlled_treatments)
 summary(mod_con1)
 r2_ml(mod_con1)
 # orchard plot
-o_plot(mod_con, moderator = "Controlled_treatments")
+orchard_plot(mod_con1, mod = "Controlled_treatments", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+```
+
+### Controlled x Sex (`Sex_Cont`)
+
+```{r}
+# TODO - not sure whether we should include this
+dat$Sex_Cont <- paste(dat$Sex, dat$Controlled_treatments, sep = "_")
+
+mod_scont <- mod_func(formula = ~ Sex_Cont-1)
+summary(mod_scont)
+# contrast
+mod_scont1 <- mod_func(formula = ~ Sex_Cont)
+summary(mod_scont1)
+r2_ml(mod_scont1)
+# orchard plot
+orchard_plot(mod_scont1, mod = "Sex_Cont", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
 ```
 
 ### Type of effect sizes (`Effect_type`)
@@ -716,7 +718,7 @@ mod_eff1 <- mod_func(formula = ~ Effect_type)
 summary(mod_eff1)
 r2_ml(mod_eff1)
 # orchard plot
-o_plot(mod_eff, moderator = "Effect_type")
+orchard_plot(mod_eff1, mod = "Effect_type", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
 ```
 
 ### Matuarity (`Maturity_at_treatment_ordinal`)
@@ -731,7 +733,11 @@ mod_sex_mat <- mod_func(formula = ~ Sex*Maturity_at_treatment_ordinal)
 summary(mod_sex_mat)
 r2_ml(mod_mat)
 # bubble plot
-b_plot(data = dat, mod = mod_sex_mat)
+get_data_raw_cont(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
+
+#test <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
+bubble_plot(test, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")#test2 <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", data = dat, group = "Study")
+bubble_plot(mod_mat, mod = "Maturity_at_treatment_ordinal", data = dat)
 ```
 
 ## Mulit-moderator models
@@ -739,8 +745,9 @@ b_plot(data = dat, mod = mod_sex_mat)
 ### Full model
 
 ```{r}
+# at least 10 in each group (sex * wild = male wild is too few - 4)
 
-mod_full <- mod_func(formula = ~ Sex + Sex_Gonads + Sex*Controlled_treatments +Sex*Maturity_at_treatment_ordinal + Sex*Wild_or_semi_wild)
+mod_full <- mod_func(formula = ~ Sex_Gonads + Sex*Controlled_treatments +  Wild_or_semi_wild + Sex*Maturity_at_treatment_ordinal)
 summary(mod_full)
 r2_ml(mod_full)
 ```
@@ -760,20 +767,18 @@ res_mod_full <- readRDS(file = here("Rdata", "res_mod_full"))
 
 # delta AIC = 2
 res_mod_full2<- subset(res_mod_full, delta <= 2, recalc.weights=FALSE)
-importance(res_mod_full2)
 
 # the best model according to the delta 2
 best2 <- mod_func(formula = ~ Controlled_treatments + Wild_or_semi_wild)
+summary(best2)
 
-# delta AIC = 6
-res_mod_full6<- subset(res_mod_full, delta <= 6, recalc.weights=FALSE)
-importance(res_mod_full6)
+#
+avg2 <- model.avg(res_mod_full2)
+summary(avg2)
 
-importance(res_mod_full)
-
-# the best model according to delta 6
-best6 <- mod_func(formula = ~ Sex + Controlled_treatments + Wild_or_semi_wild)
-
+# note 
+# controlling and wild-semi-wide is corelated: r = 0.34
+cor.test(as.numeric(dat$Controlled_treatments),as.numeric(dat$Wild_or_semi_wild))
 
 ```
 
@@ -845,46 +850,52 @@ res2 <- emmeans(prep, specs = "1", df = pub_bias$ddf, weights = "prop")
 res2
 ```
 
-## Leave-one-out analysis
+## Leave-one-study-out analysis
 
 ```{r, eval = FALSE}
-# TODO
-# function to do this analysis
-dat$Study_ID <- as.factor(dat$Study_ID)
+dat$Study <- as.factor(dat$Study)
 
 LeaveOneOut_effectsize <- list()
-for(i in 1:length(levels(dat$Study_ID))){
-  LeaveOneOut_effectsize[[i]] <- rma.mv(yi = lnRR_Ea, V = lnRRV_E, 
-                                        random = list(~1 | Study_ID,~1| ES_ID, ~1 | Strain), 
-                                        method = "REML", data = dat[dat$Study_ID
-                                                                    != levels(dat$Study_ID)[i], ])}
+for(i in 1:length(levels(dat$Study))){
+  dat1 <- dat[dat$Study != levels(dat$Study)[i], ]
+  V_matrix <- impute_covariance_matrix(vi = dat1$vi, cluster = dat1$Shared_control, r = 0.5)
+  
+  LeaveOneOut_effectsize[[i]] <- rma.mv(yi, 
+               V = V_matrix,
+               random = list(~1|Species_Latin, 
+                             ~1|Study, 
+                             ~1|Effect_ID), 
+               test = "t",
+               sparse = TRUE,
+               control=list(optimizer="optim", optmethod="BFGS"),
+               data = dat1)
+  }
 
 
 # writing function for extracting est, ci.lb, and ci.ub from all models
-est.func <- function(mod_E0){
-  df <- data.frame(est = mod_E0$b, lower = mod_E0$ci.lb, upper = mod_E0$ci.ub)
+est.func <- function(mod){
+  df <- data.frame(est = mod$b, lower = mod$ci.lb, upper = mod$ci.ub)
   return(df)
 }
 
-
 #using dplyr to form data frame
-MA_CVR_E <- lapply(LeaveOneOut_effectsize, function(x) est.func(x))%>% bind_rows %>% mutate(left_out = levels(dat$Study_ID))
+MA_LOO <- lapply(LeaveOneOut_effectsize, function(x) est.func(x))%>% bind_rows %>% mutate(left_out = levels(dat$Study))
 
 
-saveRDS(MA_CVR_E,file = here("Rdata", "MA_CVR_E.rds"))
+saveRDS(MA_LOO,file = here("Rdata", "MA_LOO.rds"))
 #telling ggplot to stop reordering factors
-MA_CVR_E <- readRDS(file = here("Rdata", "MA_CVR_E.rds"))
+MA_LOO <- readRDS(file = here("Rdata", "MA_LOO.rds"))
 
-MA_CVR_E$left_out<- as.factor(MA_CVR_E$left_out)
-MA_CVR_E$left_out<-factor(MA_CVR_E$left_out, levels = MA_CVR_E$left_out)
+MA_LOO$left_out<- as.factor(MA_LOO$left_out)
+MA_LOO$left_out<-factor(MA_LOO$left_out, levels = MA_LOO$left_out)
 
 
 #plotting
-leaveoneout_E <- ggplot(MA_CVR_E) +
+leaveoneout_E <- ggplot(MA_LOO) +
   geom_hline(yintercept = 0, lty = 2, lwd = 1) +
-  geom_hline(yintercept = mod_E0$ci.lb, lty = 3, lwd = 0.75, colour = "black") +
-  geom_hline(yintercept = mod_E0$b, lty = 1, lwd = 0.75, colour = "black") +
-  geom_hline(yintercept = mod_E0$ci.ub, lty = 3, lwd = 0.75, colour = "black") +
+  geom_hline(yintercept = mod$ci.lb, lty = 3, lwd = 0.75, colour = "black") +
+  geom_hline(yintercept = mod$b, lty = 1, lwd = 0.75, colour = "black") +
+  geom_hline(yintercept = mod$ci.ub, lty = 3, lwd = 0.75, colour = "black") +
   geom_pointrange(aes(x = left_out, y = est, ymin = lower, ymax = upper)) +
   xlab("Study left out") + 
   ylab("lnRR, 95% CI") + 
@@ -895,9 +906,6 @@ leaveoneout_E <- ggplot(MA_CVR_E) +
   theme(axis.text.y = element_text(size = 6))
 
 leaveoneout_E
-
-dat$Study_ID <- as.integer(dat$Study_ID)
-
 
 ```
 
@@ -915,11 +923,10 @@ V_matrix_long <- impute_covariance_matrix(vi = dat_long$vi, cluster = dat_long$S
 # we can run - some heteroscad models
 # this does not improve model
 mod_comp <-  rma.mv(yi, V = V_matrix_long, 
-                 mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+                 mod = ~ Comp_type - 1, random = list(~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), data = dat_long, test = "t")
 summary(mod_comp) 
 
-orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", angle = 0)
-
+orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = dat_long, cb = F)
 ```
 
 ### Separating by sex (M/F or F/M vs. M$\star$/F or F$\star$/M)
@@ -928,10 +935,10 @@ orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", an
 # as interaction
 dat_long$Comp_type_Sex <- paste(dat_long$Comp_type, dat_long$Sex, sep = "_")
 
-mod_comp_sex <-  rma.mv(yi, V = vi, mod = ~ Comp_type_Sex -1 , random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
+mod_comp_sex <-  rma.mv(yi, V = vi, mod = ~ Comp_type_Sex -1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ),data = dat_long, test = "t")
 summary(mod_comp_sex) 
 
-orchard_plot(mod_comp_sex, mod = "Comp_type_Sex", xlab = "log response ratio (lnRR)", angle = 0)
+orchard_plot(mod_comp_sex, mod = "Comp_type_Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat_long, cb = F, angle = 45)
 ```
 
 ### Comparing F/M vs. F$\star$/M$\star$
@@ -946,9 +953,8 @@ V_matrix_long <- impute_covariance_matrix(vi = sdat_long$vi, cluster = sdat_long
 # cor_tree <- vcv(tree, corr = TRUE)
 
 # this does not improve model
-mod_comp2 <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type - 1, random = list(~1|Phylogeny, ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs), R = list(Phylogeny = cor_tree), data = sdat_long, test = "t")
+mod_comp2 <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type - 1, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs),data = sdat_long, test = "t")
 summary(mod_comp2) 
 
-orchard_plot(mod_comp2, mod = "Comp_type", xlab = "log response ratio (lnRR)", angle = 0)
-
+orchard_plot(mod_comp2, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = dat_long, cb = F, angle = 45)
 ```
