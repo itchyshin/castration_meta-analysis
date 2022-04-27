@@ -732,10 +732,14 @@ r2_ml(mod_mat)
 # interaction with Sex
 mod_sex_mat <- mod_func(formula = ~ Sex*Maturity_at_treatment_ordinal)
 summary(mod_sex_mat)
-r2_ml(mod_mat)
-# bubble plot
-get_data_raw_cont(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
 
+# different reference 
+mod_sex_mat1 <- mod_func(formula = ~ relevel(Sex,ref = "Male")*Maturity_at_treatment_ordinal)
+summary(mod_sex_mat1)
+
+
+# bubble plot
+#get_data_raw_cont(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
 #test <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
 bubble_plot(test, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")#test2 <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", data = dat, group = "Study")
 bubble_plot(mod_mat, mod = "Maturity_at_treatment_ordinal", data = dat)
@@ -964,3 +968,59 @@ summary(mod_comp2b)
 
 orchard_plot(mod_comp2, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = sdat_long, angle = 45)
 ```
+
+### Direct test is to use absolute values
+
+```{r}
+# for folded nornaml distribution see: https://en.wikipedia.org/wiki/Folded_normal_distribution
+
+# folded mean
+folded_mu <-function(mean, variance){
+  mu <- mean
+  sigma <- sqrt(variance)
+  fold_mu <- sigma*sqrt(2/pi)*exp((-mu^2)/(2*sigma^2)) + mu*(1 - 2*pnorm(-mu/sigma))
+  fold_mu
+} 
+
+# folded variance
+folded_v <-function(mean, variance){
+  mu <- mean
+  sigma <- sqrt(variance)
+  fold_mu <- sigma*sqrt(2/pi)*exp((-mu^2)/(2*sigma^2)) + mu*(1 - 2*pnorm(-mu/sigma))
+  fold_se <- sqrt(mu^2 + sigma^2 - fold_mu^2)
+  # adding se to make bigger mean
+  fold_v <-fold_se^2
+  fold_v
+} 
+
+
+sdat_long <- sdat_long %>% mutate(abs_yi = folded_mu(yi, vi), 
+                      abs_vi = folded_v(yi, vi))
+
+
+
+# VCV matrix
+abs_V_matrix_long <- impute_covariance_matrix(vi = sdat_long$abs_vi, cluster = sdat_long$Shared_control, r = 0.5)
+
+
+# this does not improve model
+mod_comp3 <-  rma.mv(abs_yi, V = abs_V_matrix_long, 
+                     mod = ~ Comp_type - 1, 
+                     random = list( ~1|Species_Latin, ~1|Study, ~Comp_type|Effect_ID),
+                    rho = 0, struct = "HCS",
+                     data = sdat_long, test = "t")
+summary(mod_comp3) 
+
+mod_comp3b <-  rma.mv(abs_yi, V = abs_V_matrix_long, 
+                      mod = ~ Comp_type, 
+                      random = list( ~1|Species_Latin, ~1|Study, ~Comp_type|Effect_ID),
+                      rho = 0, struct = "HCS",
+                      data = sdat_long, test = "t")
+summary(mod_comp3b) 
+
+#robust(mod_comp2b, cluster = sdat_long$Shared_control)
+
+orchard_plot(mod_comp3b, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = sdat_long, angle = 45)
+
+```
+

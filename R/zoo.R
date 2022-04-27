@@ -71,6 +71,15 @@ orchard_plot(mod_m_surg,xlab = "lnRR (male surgical)", group = "species", data =
 dat_m_surg[which(dat_m_surg$yi == max(dat_m_surg$yi)), "species"]
 #[1] "Pseudocheirus peregrinus"
 
+
+# exclusing outlier
+
+mod_m_surg2 <- rma.mv(yi, V = vi, 
+                     random = list(~1|species),
+                     data = dat_m_surg[-which(dat_m_surg$yi == max(dat_m_surg$yi)), ])
+summary(mod_m_surg2)
+i2_ml(mod_m_surg2)
+
 #######################
 # female hormonal data 
 ########################
