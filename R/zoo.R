@@ -44,7 +44,8 @@ dat_m_surg <- dat %>% filter(is.na(Male_Surgical_Mean) == FALSE, is.na(Male_None
          M_surgical_m = Male_Surgical_Mean,
          M_surgical_sd = sqrt(Male.Surgical)*Male_Surgical_SE,
          M_surgical_n = Male.Surgical,
-         species = species)
+         species = species,
+         phylogeny = gsub(" ","_", species))
 
   
 # getting effect size
@@ -59,8 +60,36 @@ dat_m_surg <- escalc("ROM",
               data = dat_m_surg,
               )
 
+# getting a tree
+
+#dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
+tree <- read.tree(here("data/tree_zoo.tre"))
+
+tree <- compute.brlen(tree)
+cor_tree <- vcv(tree, corr = TRUE)
+
+# checking the match
+matched <- match((dat_m_surg$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+dat_m_surg$phylogeny[8] <- "Aonyx_cinerea"
+dat_m_surg$phylogeny[18] <- "Bubalus_arnee"
+dat_m_surg$phylogeny[31] <- "Cervus_elaphus"
+dat_m_surg$phylogeny[45] <- "Equus_africanus"
+
+#[1]  8 18 31 45
+
+# adjusting phylogeny
+
+
+
+
 mod_m_surg <- rma.mv(yi, V = vi, 
-                     random = list(~1|species),
+                     random = list(
+                       ~1|species,
+                       ~1|phylogeny), 
+                     R = list(phylogeny = cor_tree), 
                      data = dat_m_surg)
 summary(mod_m_surg)
 i2_ml(mod_m_surg)
@@ -90,8 +119,8 @@ dat_f_horm <- dat %>% filter(is.na(Female_Hormonal_Mean) == FALSE, is.na(Female_
          F_hormonal_m = Female_Hormonal_Mean,
          F_hormonal_sd = sqrt(Female.Hormonal)*Female_Hormonal_SE,
          F_hormonal_n = Female.Hormonal,
-         species = species)
-
+         species = species,
+         phylogeny = gsub(" ","_", species))
 
 # getting effect size
 
@@ -105,8 +134,20 @@ dat_f_horm <- escalc("ROM",
                      data = dat_f_horm,
 )
 
+# matching tree names
+matched <- match((dat_f_horm$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+# meta-analysis
+dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
+dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
+
 mod_f_horm <- rma.mv(yi, V = vi, 
-                     random = list(~1|species),
+                     random = list(
+                       ~1|species,
+                       ~1|phylogeny), 
+                     R = list(phylogeny = cor_tree), 
                      data = dat_f_horm)
 summary(mod_f_horm)
 i2_ml(mod_f_horm)
@@ -123,7 +164,8 @@ data_f_surg<- dat %>% filter(is.na(Female_Surgical_Mean) == FALSE, is.na(Female_
          F_surgical_m = Female_Surgical_Mean,
          F_surgical_sd = sqrt(Female.Surgical)*Female_Surgical_SE,
          F_surgical_n = Female.Surgical,
-         species = species)
+         species = species,
+         phylogeny = gsub(" ","_", species))
 
 
 # getting effect size
@@ -138,8 +180,17 @@ data_f_surg <- escalc("ROM",
                      data = data_f_surg,
 )
 
+# matching tree data_f_surg
+matched <- match((dat_f_horm$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+
 mod_f_surg <- rma.mv(yi, V = vi, 
-                     random = list(~1|species),
+                     random = list(
+                       ~1|species,
+                       ~1|phylogeny), 
+                     R = list(phylogeny = cor_tree), 
                      data = data_f_surg)
 summary(mod_f_surg)
 i2_ml(mod_f_surg)

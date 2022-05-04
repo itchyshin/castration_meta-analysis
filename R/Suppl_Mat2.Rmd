@@ -440,7 +440,72 @@ i2_ml(mod) # almost no phylogenetic effect
 
 orchard_plot(mod, xlab = "log response ratio (lnRR)", group = "Study", data = dat)
 
+# some addition
+
+rob1 <- robust(mod, cluster = Study, adjust=FALSE, clubSandwich=FALSE)
+rob2 <- robust(mod, cluster = Study, adjust=TRUE, clubSandwich=FALSE)
+#rob3 <- robust(mod, cluster = Study, adjust=TRUE, clubSandwich=TRUE, verbose=TRUE)
+
+rob1
+rob2
+#rob3
+
+# some extra
+# this still does not work 
+mod2 <-  rma.mv(yi, V = V_matrix, mod = ~ 1, 
+               random = list(#~1|Phylogeny, 
+                             ~1|Species_Latin, 
+                             ~1|Study, 
+                             ~1|Effect_ID), 
+               R = list(Phylogeny = cor_tree), 
+               data = dat, 
+               test = "t",
+               sparse = TRUE,
+               control=list(optimizer="optim", optmethod="Nelder-Mead")
+               )
+summary(mod2) 
+rob3 <- robust(mod2, cluster = Study, adjust=TRUE, clubSandwich=TRUE, verbose=TRUE)
+
 ```
+
+```{r}
+# create a new cluster
+dat$Phylo_Sex <- paste(dat$Phylogeny, dat$Sex , sep = "_" )
+
+# rho = 0.5 is as in Noble et al (Mol Ecol)
+dat <- escalc(yi=yi, vi=vi, data = dat)
+cdat <- aggregate(dat, cluster=Phylo_Sex, struct="CS", rho = 0.5)
+
+dim(dat)
+dim(cdat)
+
+# trying to do 
+
+cdat$lower.ci <- cdat$yi - sqrt(cdat$vi) * qnorm(0.975) 
+cdat$upper.ci <- cdat$yi + sqrt(cdat$vi) *  qnorm(0.975)
+
+phy_sex <- ggplot(data = cdat, aes(x = yi, y = Phylo_Sex)) +
+  geom_errorbarh(aes(xmin = lower.ci, xmax = upper.ci),  
+                 height = 0, show.legend = FALSE, size = 0.5, alpha = 0.6) +
+  geom_vline(xintercept = 0, linetype = 2, colour = "black", alpha = 0.5) +
+  geom_vline(xintercept = mod$b, linetype = 1, colour = "red") +
+  geom_point(aes(fill = Species), size = 1, shape = 21) + 
+  xlim(-0.8, 1.6) +
+  theme_bw() +
+  labs(x = "lnRR (effect size)", y = "") + 
+  theme(legend.position= c(0.99, 0.01), legend.justification = c(1, 0)) +
+  theme(legend.title = element_text(size = 9)) +
+  theme(legend.direction="horizontal") +
+  theme(axis.text.y = element_blank()) +
+  theme(axis.text.y = element_text(size = 10, colour ="black",
+                                   hjust = 0.5)) +
+  guides(fill = "none")
+
+phy_sex
+
+```
+
+
 
 ## Species-specific effects
 
@@ -771,7 +836,7 @@ saveRDS(res_mod_full, file = here("Rdata", "res_mod_full"))
 res_mod_full <- readRDS(file = here("Rdata", "res_mod_full"))
 
 # delta AIC = 2
-res_mod_full2<- subset(res_mod_full, delta <= 2, recalc.weights=FALSE)
+res_mod_full2<- subset(res_mod_full, delta <= 2) #, recalc.weights=FALSE)
 
 # the best model according to the delta 2
 best2 <- mod_func(formula = ~ Controlled_treatments + Wild_or_semi_wild)
