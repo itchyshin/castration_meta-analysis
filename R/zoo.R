@@ -201,6 +201,8 @@ orchard_plot(mod_f_surg, xlab = "lnRR (female surgical)", group = "species", dat
 # data: gamma - mortality risk
 ##############################
 
+# TODO - adding phylogeny
+
 dat2 <- read.csv(here("data", "gammaBaSTA.csv"))
 
 #dat2 <- tibble(dat2)

@@ -155,6 +155,7 @@ lnrrp <- function(m1, m2, n1, n2) {
 
 
 # function to get to lnRR for longevity data (CV required)
+# The method proposed in Nakagawa et al (2022) - missing SD method
 
 lnrrm <- function(m1, m2, n1, n2, cv21, cv22) {
   # lnRR - with 2nd order correction
@@ -174,7 +175,7 @@ lnrrm <- function(m1, m2, n1, n2, cv21, cv22) {
 ```{r}
 #dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
 #dat_full <- read_csv(here("data", "data_15022022.csv"), na = c("", "NA"))
-dat_full <- read_csv(here("data", "data_19042022.csv"), na = c("", "NA"))
+dat_full <- read_csv(here("data", "data_05052022.csv"), na = c("", "NA"))
 glimpse(dat_full)
 
 #loading data ####
@@ -267,7 +268,54 @@ dat_long$Comp_type <- as.factor(rep(c("both_normal", "one_castrated"), each = di
 dim(dat_long)
 ```
 
-### Sub-data
+### Rodent data
+
+```{r}
+#sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
+rdat <- read_csv(here("data", "data3_05052022.csv"), na = c("", "NA")) 
+
+rdat %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% 
+  #filter(Type_of_sterilization != "Vasectomy") %>% 
+  mutate_if(is.character, as.factor) -> dat
+
+dim(rdat)
+
+# separating two kinds
+
+effect_type_r <- ifelse(str_detect(rdat$Lifespan_parameter, "Me"), "longevity", "mortality")
+
+
+# effect-level ID
+#dat$Species_Latin <- gsub("Macaca Fascicularis", "Macaca fascicularis", dat$Species_Latin) #fix a typo in species name
+rdat$Effect_ID <- 1:nrow(rdat)
+rdat$Phylogeny <- sub(" ", "_",  rdat$Species_Latin)
+rdat$Effect_type <- effect_type_r
+
+# key variables
+names(rdat)
+unique(rdat$Species_Latin)
+
+```
+
+#### Calcuating effect size for the main data
+
+```{r}
+# let's get CVs
+
+rdat %>% group_by(Study) %>% summarise(cv2_cont = mean((Error_control_SD/Control_lifespan_variable)^2, na.rm = T), cv2_trt = mean((Error_experimental_SD/Treatment_lifespan_variable)^2, na.rm = T), cv2_opst = mean((Error_opposite_sex_SD/Opposite_sex_lifespan_variable)^2, na.rm = T), n_cont = mean(Sample_size_control, na.rm = T), n_trt =  mean(Sample_size_sterilization, na.rm = T), n_opst =  mean(Sample_size_opposite_sex, na.rm = T)) %>% 
+  ungroup() %>% 
+  summarise(cv2_cont = weighted.mean(cv2_cont, n_cont, na.rm = T), cv2_trt = weighted.mean(cv2_trt, n_trt, na.rm = T), cv2_opst = weighted.mean(cv2_opst, n_opst, na.rm = T)) -> cvs
+
+# lnRR
+# using CV
+rdat$yi <- ifelse(effect_type_r == "longevity", lnrrm(rdat$Treatment_lifespan_variable, rdat$Control_lifespan_variable, rdat$Sample_size_sterilization, rdat$Sample_size_control, cvs[["cv2_trt"]],cvs[["cv2_cont"]])[[1]], lnrrp(rdat$Treatment_lifespan_variable, rdat$Control_lifespan_variable, rdat$Sample_size_sterilization, rdat$Sample_size_control)[[1]])
+
+rdat$vi <- ifelse(effect_type_r == "longevity", lnrrm(rdat$Treatment_lifespan_variable, rdat$Control_lifespan_variable, rdat$Sample_size_sterilization, rdat$Sample_size_control, cvs[["cv2_trt"]],cvs[["cv2_cont"]])[[2]], lnrrp(rdat$Treatment_lifespan_variable, rdat$Control_lifespan_variable, rdat$Sample_size_sterilization, rdat$Sample_size_control)[[2]])
+
+str(rdat)
+```
+
+### Matching data
 
 ```{r}
 #sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
@@ -433,7 +481,7 @@ mod <-  rma.mv(yi, V = V_matrix, mod = ~ 1,
                )
 summary(mod) 
 
-i2_ml(mod) # almost no phylogenetic effect
+round(i2_ml(mod),2) # almost no phylogenetic effect
 
     #     I2_Total     I2_Phylogeny I2_Species_Latin         I2_Study     I2_Effect_ID 
     # 99.465653956      0.000228903     44.565114981     34.127163402     20.773146669
@@ -457,17 +505,18 @@ mod2 <-  rma.mv(yi, V = V_matrix, mod = ~ 1,
                              ~1|Species_Latin, 
                              ~1|Study, 
                              ~1|Effect_ID), 
-               R = list(Phylogeny = cor_tree), 
+               #R = list(Phylogeny = cor_tree), 
                data = dat, 
                test = "t",
                sparse = TRUE,
                control=list(optimizer="optim", optmethod="Nelder-Mead")
                )
 summary(mod2) 
-rob3 <- robust(mod2, cluster = Study, adjust=TRUE, clubSandwich=TRUE, verbose=TRUE)
-
+rob2.2 <- robust(mod2, cluster = Study, adjust=TRUE, clubSandwich=TRUE, verbose=TRUE)
+rob2.2
 ```
 
+## Sex-wise species-level effect
 ```{r}
 # create a new cluster
 dat$Phylo_Sex <- paste(dat$Phylogeny, dat$Sex , sep = "_" )
@@ -805,9 +854,9 @@ summary(mod_sex_mat1)
 
 # bubble plot
 #get_data_raw_cont(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
-#test <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
+test <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
 bubble_plot(test, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")#test2 <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", data = dat, group = "Study")
-bubble_plot(mod_mat, mod = "Maturity_at_treatment_ordinal", data = dat)
+bubble_plot(mod_mat, mod = "Maturity_at_treatment_ordinal", data = dat, group = "Study",)
 ```
 
 ## Mulit-moderator models
@@ -980,6 +1029,99 @@ leaveoneout_E
 ```
 
 
+# Meta-analysis (rodent data only)
+
+## Main model
+
+```{r}
+# shared control 
+# this does not seem to work
+#V_matrix <- make_VCV_matrix(dat, V= "vi", cluster = "Shared_control", obs = "Effect_ID")
+
+V_matrix <- impute_covariance_matrix(vi = rdat$vi, cluster = rdat$Shared_control, r = 0.5)
+
+
+# meta-analysis basics
+# phylo model
+rmod <-  rma.mv(yi, V = V_matrix, mod = ~ 1, 
+               random = list(~1|Species_Latin, 
+                             ~1|Study, 
+                             ~1|Effect_ID), 
+               data = rdat, 
+               test = "t",
+               sparse = TRUE,
+               control=list(optimizer="optim", optmethod="Nelder-Mead")
+               )
+summary(rmod) 
+
+i2_ml(rmod) 
+
+orchard_plot(rmod, xlab = "log response ratio (lnRR)", group = "Study", data = dat)
+
+# some addition
+
+rrob1 <- robust(rmod, cluster = Study, adjust=FALSE, clubSandwich=FALSE)
+rrob2 <- robust(rmod, cluster = Study, adjust=TRUE, clubSandwich=FALSE)
+```
+
+
+### Sex difference (`Sex`)
+
+```{r}
+rmod_sex <-  rma.mv(yi, V = V_matrix, mod = ~ Sex, 
+               random = list(~1|Species_Latin, 
+                             ~1|Study, 
+                             ~1|Effect_ID), 
+               data = rdat, 
+               test = "t",
+               sparse = TRUE,
+               control=list(optimizer="optim", optmethod="Nelder-Mead")
+               )
+summary(rmod_sex) 
+
+r2_ml(rmod_sex) 
+
+#rrob_sex1 <- robust(rmod_sex, cluster = Study, adjust=FALSE, clubSandwich=FALSE)
+#rrob_sex2 <- robust(rmod_sex, cluster = Study, adjust=TRUE, clubSandwich=FALSE)
+
+
+orchard_plot(rmod_sex, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat)
+
+# some addition
+# orchard plot
+test <- mod_results(mod_sex1, mod = "Sex", group = "Study", data = dat)
+orchard_plot(mod_sex1, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+```
+
+### Maturity (in days)
+
+```{r}
+
+# two more type of ages
+rdat$lnAge_Trt <- log(rdat$Age_at_treatment_continuous)
+rdat$Age_ratio <- (rdat$Age_at_treatment_continuous/rdat$Day_to_matuarity)
+rdat$lnAge_ratio <- log(rdat$Age_at_treatment_continuous/rdat$Day_to_matuarity)
+
+
+# just pure effect
+rmod_mat <- rma.mv(yi, V = V_matrix, mod = ~ lnAge_ratio*Sex, 
+               random = list(~1|Species_Latin, 
+                             ~1|Study, 
+                             ~1|Effect_ID), 
+               data = rdat, 
+               test = "t",
+               sparse = TRUE,
+               control=list(optimizer="optim", optmethod="Nelder-Mead")
+               )
+summary(rmod_mat)
+r2_ml(rmod_mat)
+
+bubble_plot(rmod_mat, mod = "lnAge_ratio", group = "Study", data = rdat, by = "Sex", xlab = "ln(Treatment Day/Day to sexual maturity) [Rodent data only]", ylab = "ln(Response ratio)")
+
+```
+
+
+
 # Meta-regression (different sex contrasts)
 
 ## Contrasts based different sexes {.tabset .tabset_fade .tabset_pills}
@@ -1004,6 +1146,9 @@ orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", gr
 ```{r}
 # as interaction
 dat_long$Comp_type_Sex <- paste(dat_long$Comp_type, dat_long$Sex, sep = "_")
+
+
+
 
 mod_comp_sex <-  rma.mv(yi, V = vi, mod = ~ Comp_type_Sex -1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ),data = dat_long, test = "t")
 summary(mod_comp_sex) 
