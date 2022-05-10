@@ -194,10 +194,11 @@ effect_type <- ifelse(str_detect(dat$Lifespan_parameter, "Me"), "longevity", "mo
 
 # effect-level ID
 dat$Species_Latin <- gsub("Macaca Fascicularis", "Macaca fascicularis", dat$Species_Latin) #fix a typo in species name
-dat$Effect_ID <- 1:nrow(dat)
+dat$Species_Latin <- gsub("Equus caballus", "Equus ferus", dat$Species_Latin)
+dat$Phylogeny <- gsub("Equus_caballus", "Equus_ferus", dat$Phylogeny)
 dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin)
 dat$Effect_type <- effect_type
-
+dat$Effect_ID <- 1:nrow(dat)
 # key variables
 names(dat)
 unique(dat$Species_Latin)
@@ -225,7 +226,7 @@ dat1 <- dat
 dat2 <- dat
 
 dat1$yi <- ifelse(effect_type == "longevity", 
-                  lnrrm(dat$Control_lifespan_variable,dat$Opposite_sex_lifespan_variable,  
+                  lnrrm(dat$Control_lifespan_variable, dat$Opposite_sex_lifespan_variable,  
                         dat$Sample_size_control, dat$Sample_size_opposite_sex, 
                         cvs[["cv2_cont"]],cvs[["cv2_opst"]])[[1]], 
                   lnrrp(dat$Control_lifespan_variable, dat$Opposite_sex_lifespan_variable, 
@@ -264,6 +265,7 @@ dat_long <- rbind(dat1, dat2)
 dat_long$Obs <- factor(1:dim(dat_long)[[1]])
 dat_long$Comp_type <- as.factor(rep(c("both_normal", "one_castrated"), each = dim(dat_long)[[1]]/2))
 
+dat_long %>% filter(!is.na(yi), !is.na(vi)) -> dat_long
 
 dim(dat_long)
 ```
@@ -274,9 +276,9 @@ dim(dat_long)
 #sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
 rdat <- read_csv(here("data", "data3_05052022.csv"), na = c("", "NA")) 
 
-rdat %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% 
+rdat <- rdat %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% 
   #filter(Type_of_sterilization != "Vasectomy") %>% 
-  mutate_if(is.character, as.factor) -> dat
+  mutate_if(is.character, as.factor) 
 
 dim(rdat)
 
@@ -414,6 +416,7 @@ setdiff(gsub("_"," ", tree$tip.label), myspecies) # "Perca fluviatilis"
 setdiff(myspecies, gsub("_"," ", tree$tip.label)) # "Lamperta fluviatilis"
 tree$tip.label <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", tree$tip.label) #replace with the original name
 
+#tree <- drop.tip(tree, "Equus_caballus")
 #re-check overlap and differences with myspecies list
 #intersect(myspecies, tree2$tip.label) #23
 #setdiff(myspecies, tree2$tip.label) #0
@@ -452,14 +455,16 @@ plot(tree, cex=.6, label.offset =.1, no.margin = TRUE)
 # shared control 
 # this does not seem to work
 #V_matrix <- make_VCV_matrix(dat, V= "vi", cluster = "Shared_control", obs = "Effect_ID")
-
 V_matrix <- impute_covariance_matrix(vi = dat$vi, cluster = dat$Shared_control, r = 0.5)
 
-# phylogeny
+#phylogeny
 #dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
-tree <- read.tree(here("data/tree_rotl.tre"))
 
+tree <- read.tree(here("data/tree_rotl.tre"))
 tree <- compute.brlen(tree)
+
+# dropping unused tips
+
 cor_tree <- vcv(tree, corr = TRUE)
 
 # checking the match
@@ -512,12 +517,16 @@ mod2 <-  rma.mv(yi, V = V_matrix, mod = ~ 1,
                control=list(optimizer="optim", optmethod="Nelder-Mead")
                )
 summary(mod2) 
-rob2.2 <- robust(mod2, cluster = Study, adjust=TRUE, clubSandwich=TRUE, verbose=TRUE)
-rob2.2
+# rob2.2 <- robust(mod2, cluster = Study, adjust=TRUE, clubSandwich=TRUE, verbose=TRUE)
+# rob2.2
 ```
 
 ## Sex-wise species-level effect
 ```{r}
+# creating mod_table- results from the model
+
+results <- mod_results(mod2, group = "Study", data = dat)[[1]]
+
 # create a new cluster
 dat$Phylo_Sex <- paste(dat$Phylogeny, dat$Sex , sep = "_" )
 
@@ -528,29 +537,133 @@ cdat <- aggregate(dat, cluster=Phylo_Sex, struct="CS", rho = 0.5)
 dim(dat)
 dim(cdat)
 
-# trying to do 
-
+# CI
 cdat$lower.ci <- cdat$yi - sqrt(cdat$vi) * qnorm(0.975) 
 cdat$upper.ci <- cdat$yi + sqrt(cdat$vi) *  qnorm(0.975)
+# adding more informaition
 
-phy_sex <- ggplot(data = cdat, aes(x = yi, y = Phylo_Sex)) +
-  geom_errorbarh(aes(xmin = lower.ci, xmax = upper.ci),  
-                 height = 0, show.legend = FALSE, size = 0.5, alpha = 0.6) +
-  geom_vline(xintercept = 0, linetype = 2, colour = "black", alpha = 0.5) +
-  geom_vline(xintercept = mod$b, linetype = 1, colour = "red") +
-  geom_point(aes(fill = Species), size = 1, shape = 21) + 
-  xlim(-0.8, 1.6) +
+cdat %>% select(Species_Latin, yi, lower.ci, upper.ci, Sex) -> ddat
+
+addition <- data.frame(Species_Latin = "Overall",yi =  NA,lower.ci = NA, upper.ci = NA, Sex = "Female")
+
+ddat <- rbind(ddat, addition)
+
+sum_data <- data.frame("x.diamond" = c(results$lowerCL,
+                                         results$estimate ,
+                                         results$upperCL,
+                                         results$estimate ),
+                         "y.diamond" = c(1,
+                                         1 + 0.25,
+                                         1,
+                                         1 - 0.25)
+  )
+
+
+ddat$Species_Latin <-  factor(ddat$Species_Latin, 
+                                 levels = c("Overall", 
+                                            "Lamperta fluviatilis", # fish
+                                            "Oncorhynchus nerka", # fish
+                                            "Oncorhynchus masou" , # fish
+                                            "Anolis sagrei" , # lizard
+                                            "Phascolarctos cinereus", #masp
+                                            "Trichosurus vulpecula", # masp?
+                                            "Oryctolagus cuniculus", # rabbit
+                                            "Mesocricetus auratus", 
+                                            "Myodes glareolus", # voles
+                                            "Rattus norvegicus", # rat
+                                            "Rattus argentiventer" , #rat
+                                            "Mus musculus", 
+                                            "Ovis aries",
+                                            "Equus ferus",
+                                            "Odocoileus virginianus" , 
+                                            "Vulpes vulpes", 
+                                            "Canis lupus",
+                                            "Felis catus",
+                                            "Varecia variegata",
+                                            "Varecia rubra",
+                                            "Macaca fascicularis",
+                                            "Homo sapiens"
+                                            ),
+                              labels  = c("Overall", 
+                                            "Lamperta fluviatilis", # fish
+                                            "Oncorhynchus nerka", # fish
+                                            "Oncorhynchus masou" , # fish
+                                            "Anolis sagrei" , # lizard
+                                            "Phascolarctos cinereus", #masp
+                                            "Trichosurus vulpecula", # masp?
+                                            "Oryctolagus cuniculus", # rabbit
+                                            "Mesocricetus auratus", 
+                                            "Myodes glareolus", # voles
+                                            "Rattus norvegicus", # rat
+                                            "Rattus argentiventer" , #rat
+                                            "Mus musculus", 
+                                            "Ovis aries",
+                                            "Equus ferus",
+                                            "Odocoileus virginianus" , 
+                                            "Vulpes vulpes", 
+                                            "Canis lupus",
+                                            "Felis catus",
+                                            "Varecia variegata",
+                                            "Varecia rubra",
+                                            "Macaca fascicularis",
+                                            "Homo sapiens"
+                                            ))
+
+
+phy_sex <- ggplot(data = ddat, aes(x = yi, y = Species_Latin)) +
+   geom_errorbarh(aes(xmin = lower.ci, xmax = upper.ci, colour = Sex), 
+                  height = 0, show.legend = TRUE, size = 4.5, alpha = 0.8, position =position_dodge(width = 0.75)) +
+   geom_point(aes(col = Sex), fill = "white", size = 2, shape = 21, position =position_dodge2(width = 0.75)) +
+  geom_vline(xintercept = 0, linetype = 2, colour = "black", alpha = 0.3) +
+  geom_vline(xintercept = mod$b, linetype = 1, colour = "red", alpha = 0.3) +
+  xlim(-1.6, 1.6) +
+  #creating 95% prediction intervals
+  geom_segment(data = results, ggplot2::aes(x = lowerPR, y = 1, xend = upperPR, yend = 1, group = name)) +
+    # creating diamonsts (95% CI)
+    ggplot2::geom_polygon(data = sum_data, ggplot2::aes(x = x.diamond, y = y.diamond), fill = "red") +
+  
   theme_bw() +
-  labs(x = "lnRR (effect size)", y = "") + 
-  theme(legend.position= c(0.99, 0.01), legend.justification = c(1, 0)) +
+  scale_color_manual(values = c("#CC6677", "#88CCEE")) +
+   labs(x = "lnRR (effect size)", y = "", colour = "Sex") +
+  theme(legend.position= c(0.95, 0.9), legend.justification = c(1, 0)) +
   theme(legend.title = element_text(size = 9)) +
-  theme(legend.direction="horizontal") +
+  #theme(legend.direction="horizontal") +
   theme(axis.text.y = element_blank()) +
   theme(axis.text.y = element_text(size = 10, colour ="black",
-                                   hjust = 0.5)) +
-  guides(fill = "none")
+                                  hjust = 0.5)) 
 
-phy_sex
+
+# adding incons
+filenames <- list.files("icons", pattern=".png", full.names=TRUE)
+ldf <- lapply(filenames, readPNG)
+names(ldf) <- substr(filenames, 7, 60)
+
+phy_sex +
+  annotation_custom(rasterGrob(ldf$Lampetra_fluviatilis.png), xmin = -1.5, xmax = -1, ymin = 1.5, ymax = 2.5) +
+  annotation_custom(rasterGrob(ldf$Oncorhynchus_nerka.png), xmin = -1.5, xmax = -1, ymin = 2.5, ymax = 3.5) +
+  annotation_custom(rasterGrob(ldf$Oncorhynchus_masou.png), xmin = -1.5, xmax = -1, ymin = 3.5, ymax = 4.5) +
+  annotation_custom(rasterGrob(ldf$Anolis_sagrei.png), xmin = -1.5, xmax = -1, ymin = 4.5, ymax = 5.5) +
+  annotation_custom(rasterGrob(ldf$Phascolarctos_cinereus.png), xmin = -1.5, xmax = -1, ymin = 5.5, ymax = 6.5) +
+  annotation_custom(rasterGrob(ldf$Trichosurus_vulpecula.png), xmin = -1.5, xmax = -1, ymin = 6.5, ymax = 7.5) +
+  annotation_custom(rasterGrob(ldf$Oryctolagus_cuniculus.png), xmin = -1.5, xmax = -1, ymin = 7.5, ymax = 8.5) +
+  annotation_custom(rasterGrob(ldf$Mesocricetus_auratus.png), xmin = -1.5, xmax = -1, ymin = 8.5, ymax = 9.5) +
+  annotation_custom(rasterGrob(ldf$Myodes_glareolus.png), xmin = -1.5, xmax = -1, ymin = 9.5, ymax = 10.5) +
+  annotation_custom(rasterGrob(ldf$Rattus_norvegicus.png), xmin = -1.5, xmax = -1, ymin = 10.5, ymax = 11.5) +
+  annotation_custom(rasterGrob(ldf$Rattus_argentiventer.png), xmin = -1.5, xmax = -1, ymin = 11.5, ymax = 12.5) +
+  annotation_custom(rasterGrob(ldf$Mus_musculus.png), xmin = -1.5, xmax = -1, ymin = 12.5, ymax = 13.5) +
+  annotation_custom(rasterGrob(ldf$Ovis_aries.png), xmin = -1.5, xmax = -1, ymin = 13.5, ymax = 14.5) +
+  annotation_custom(rasterGrob(ldf$Equus_ferus.png), xmin = -1.5, xmax = -1, ymin = 14.5, ymax = 15.5) +
+  annotation_custom(rasterGrob(ldf$Odocoileus_virginianus.png), xmin = -1.5, xmax = -1, ymin = 15.5, ymax = 16.5) +
+  annotation_custom(rasterGrob(ldf$Vulpes_vulpes.png), xmin = -1.5, xmax = -1, ymin = 16.5, ymax = 17.5) +
+  annotation_custom(rasterGrob(ldf$Canis_lupus.png), xmin = -1.5, xmax = -1, ymin = 17.5, ymax = 18.5) +
+  annotation_custom(rasterGrob(ldf$Felis_catus.png), xmin = -1.5, xmax = -1, ymin = 18.5, ymax = 19.5) +
+  annotation_custom(rasterGrob(ldf$Varecia_variegata.png), xmin = -1.5, xmax = -1, ymin = 19.5, ymax = 20.5) +
+  annotation_custom(rasterGrob(ldf$Varecia_rubra.png), xmin = -1.5, xmax = -1, ymin = 20.5, ymax = 21.5) +
+  annotation_custom(rasterGrob(ldf$Macaca_Fascicularis.png), xmin = -1.5, xmax = -1, ymin = 21.5, ymax = 22.5)  +
+  annotation_custom(rasterGrob(ldf$Homo_sapiens.png), xmin = -1.5, xmax = -1, ymin = 22.5, ymax = 23.5) 
+
+
+
 
 ```
 
@@ -1173,7 +1286,12 @@ V_matrix_long <- impute_covariance_matrix(vi = dat_long$vi, cluster = dat_long$S
 # we can run - some heteroscad models
 # this does not improve model
 mod_comp <-  rma.mv(yi, V = V_matrix_long, 
-                 mod = ~ Comp_type - 1, random = list(~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ), data = dat_long, test = "t")
+                 mod = ~ Comp_type - 1, 
+                 random = list(~1|Species_Latin, 
+                               ~1|Study, 
+                               ~1|Effect_ID, 
+                               ~1|Obs ), 
+                 data = dat_long, test = "t")
 summary(mod_comp) 
 
 orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = dat_long, cb = F)
@@ -1185,9 +1303,7 @@ orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", gr
 # as interaction
 dat_long$Comp_type_Sex <- paste(dat_long$Comp_type, dat_long$Sex, sep = "_")
 
-#test1 <- factor(test, levels = c("C","B", "A"), labels = c("Carol", "Beth", "Andrew"))
-
-dat_long$Comp_type_Sex <- factor(dat_long$Comp_type_Sex, 
+dat_long$Comp_type_Sex1 <- factor(dat_long$Comp_type_Sex, 
                                  levels = c("one_castrated_Male", "both_normal_Male",
                                             "one_castrated_Female", "both_normal_Female"),
                                  labels = c("Male sterlized/\nFemale normal",
@@ -1195,22 +1311,147 @@ dat_long$Comp_type_Sex <- factor(dat_long$Comp_type_Sex,
                                             "Female sterlized/\nMale normal",
                                             "Female normal/\nMale normal") )
 
-mod_comp_sex <-  rma.mv(yi, V = vi, mod = ~ Comp_type_Sex -1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ),data = dat_long, test = "t")
+dat_long$Comp_type <-  factor(dat_long$Comp_type, 
+                                 levels = c("one_castrated", "both_normal"),
+                                 labels = c("one_castrated", "both_normal") )
+
+#test1 <- factor(test, levels = c("C","B", "A"), labels = c("Carol", "Beth", "Andrew"))
+
+dat_long$Comp_type_Sex1 <- factor(dat_long$Comp_type_Sex, 
+                                 levels = c("one_castrated_Male", "both_normal_Male",
+                                            "one_castrated_Female", "both_normal_Female"),
+                                 labels = c("Male sterlized/\nFemale normal",
+                                            "Male normal/\nFemale normal",
+                                            "Female sterlized/\nMale normal",
+                                            "Female normal/\nMale normal") )
+
+mod_comp_sex <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type_Sex1 -1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ),data = dat_long, test = "t")
 summary(mod_comp_sex) 
 
-test<- orchard_plot(mod_comp_sex, mod = "Comp_type_Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat_long, cb = F, angle = 45)
+orchard_plot(mod_comp_sex, mod = "Comp_type_Sex1", xlab = "absolute log response ratio (lnRR)", group = "Study", data = dat_long, cb = T, angle = 45)
 
 # this does not work
 #test + coord_flip()
 
-# trying to draw paried figures
-
-
-
-
 ```
 
 ### Absolute effect size comparaion (M/F or F/M vs. M$\star$/F or F$\star$/M) 
+
+```{r}
+
+# VCV matrix
+abs_V_matrix_long <- impute_covariance_matrix(vi = dat_long$abs_vi, cluster = dat_long$Shared_control, r = 0.5)
+
+abs_mod_comp_sex0 <-  rma.mv(abs_yi, V = abs_V_matrix_long, mod = ~ Comp_type_Sex1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ),data = dat_long, test = "t")
+summary(abs_mod_comp_sex0) 
+
+abs_mod_comp_sex <-  rma.mv(abs_yi, V = abs_V_matrix_long, mod = ~ Comp_type_Sex1 -1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs), data = dat_long, test = "t")
+summary(abs_mod_comp_sex) 
+
+# absolute
+p1 <- orchard_plot(abs_mod_comp_sex, mod = "Comp_type_Sex1", xlab = "absolute log response ratio (lnRR)", group = "Study", data = dat_long, cb = T, angle = 45)
+
+# Pair figures
+# female
+female_dat_log <- dat_long %>% filter(Sex == "Female")
+
+p2 <- ggplot(female_dat_log, aes(x = Comp_type, y = abs_yi)) + 
+  geom_point(aes(size = sqrt(1/abs_vi), col = Comp_type), alpha = 0.5) +
+  geom_line(aes(group = Effect_ID), alpha = 0.5) + 
+  labs(y = "absolute log response ratio (lnRR)", x = "", size = "Precision (1/SE)") + 
+  scale_x_discrete(labels = c("one_castrated" = "Female sterlized/\nMale normal", "both_normal" = "Female normal/\nMale normal")) +
+  #xlim(c("one_castrated","both_normal"))+
+  ylim(0, 1.25) + 
+  scale_color_manual(values = c("#DDCC77", "#117733")) +
+  coord_flip() +
+  theme_bw() +
+  guides(colour = "none") +
+  theme(legend.position= c(1, 0), legend.justification = c(1, 0)) +
+	theme(legend.title = element_text(size = 9)) +
+	theme(legend.direction="horizontal") +
+	theme(legend.background = element_blank()) +
+	theme(axis.text.y = element_text(size = 10, colour ="black",
+	                                                        hjust = 0.5,
+	                                                        angle = 45))
+
+
+f_dat_log<- female_dat_log %>% group_by(Effect_ID) %>% summarise(yi2 = abs_yi[2] - abs_yi[1],
+                                                     vi2 = abs_vi[1] + abs_vi[2] -
+                                                       0.5*sqrt(abs_vi[1]*abs_vi[2]),
+                                                     Species_Latin = Species_Latin[1],
+                                                     Study = Study[1])
+
+# variance covariance matrix
+V_matrix_long1 <- impute_covariance_matrix(vi = f_dat_log$vi, cluster = f_dat_log$Shared_control, r = 0.5)
+
+# we can run - some heteroscad models
+# this does not improve model
+f_mod_long <-  rma.mv(yi2, V = vi2, 
+                 random = list(~1|Species_Latin, 
+                               ~1|Study, 
+                               ~1|Effect_ID), 
+                 data = f_dat_log, test = "t")
+summary(f_mod_long) 
+
+p3 <- orchard_plot(f_mod_long, xlab = "absolute log response ratio (lnRR)", group = "Study", data = f_dat_log, cb = F, angle = 45) + 
+  scale_fill_manual(values =  "#999933") +
+  scale_colour_manual(values =  "#999933") +
+  scale_x_discrete(labels = "Female sterlized/\nMale normal vs. \nFemale normal/\nMale normal") +
+  ylim(-0.9, 0.5)
+
+# pair figure male  
+male_dat_log <- dat_long %>% filter(Sex == "Male")
+
+p4 <- ggplot(male_dat_log, aes(x =Comp_type, y = abs_yi)) + 
+  geom_point(aes(size = sqrt(1/abs_vi), col = Comp_type), alpha = 0.5) +
+  geom_line(aes(group = Effect_ID), alpha = 0.5) + 
+  labs(y = "absolute log response ratio (lnRR)", x = "", size = "Precision (1/SE)") + 
+  scale_x_discrete(labels = c("one_castrated" ="Male sterlized/\nFemale normal", "both_normal" = "Male normal/\nFemale normal")) +
+  ylim(0, 1.25) + 
+  #coord_cartesian(xlim = c(0.5, 2.5)) +
+  scale_color_manual(values = c("#88CCEE", "#CC6677")) +
+  coord_flip() +
+  theme_bw() +
+  guides(colour = "none") +
+  theme(legend.position= c(1, 0), legend.justification = c(1, 0)) +
+	theme(legend.title = element_text(size = 9)) +
+	theme(legend.direction="horizontal") +
+	theme(legend.background = element_blank()) +
+	theme(axis.text.y = element_text(size = 10, colour ="black",
+	                                                        hjust = 0.5,
+	                                                        angle = 45))
+ 
+
+m_dat_log<- male_dat_log %>% group_by(Effect_ID) %>% summarise(yi2 = abs_yi[2] - abs_yi[1],
+                                                     vi2 = abs_vi[1] + abs_vi[2] -
+                                                       0.5*sqrt(abs_vi[1]*abs_vi[2]),
+                                                     Species_Latin = Species_Latin[1],
+                                                     Study = Study[1])
+
+# variance covariance matrix
+V_matrix_long2 <- impute_covariance_matrix(vi = m_dat_log$vi, cluster = m_dat_log$Shared_control, r = 0.5)
+
+# we can run - some heteroscad models
+# this does not improve model
+m_mod_long <-  rma.mv(yi2, V = vi2, 
+                 random = list(~1|Species_Latin, 
+                               ~1|Study, 
+                               ~1|Effect_ID), 
+                 data = m_dat_log, test = "t")
+summary(m_mod_long) 
+
+p5 <- orchard_plot(m_mod_long, xlab = "absolute log response ratio (lnRR)", group = "Study", data = m_dat_log, cb = F, angle = 45) + 
+   scale_fill_manual(values = "#332288") +
+  scale_colour_manual(values = "#332288") +
+scale_x_discrete(labels = "Male sterlized/\nFemale normal vs. \nMale normal/\nFemale normal") +
+  ylim(-0.9, 0.5)
+
+patch <- p1|(p2/p4)|(p3/p5) + plot_layout()
+
+patch +  plot_annotation(tag_levels = "A")
+
+```
+
 
 
 ### Comparing F/M vs. F$\star$/M$\star$
@@ -1240,7 +1481,6 @@ orchard_plot(mod_comp2, mod = "Comp_type", xlab = "log response ratio (lnRR)", g
 ### Absolute effect size comparaion (F/M vs. F$\star$/M$\star$)
 
 ```{r}
-
 
 # VCV matrix
 abs_V_matrix_long <- impute_covariance_matrix(vi = sdat_long$abs_vi, cluster = sdat_long$Shared_control, r = 0.5)
