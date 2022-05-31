@@ -81,7 +81,7 @@ pacman::p_load(tidyverse,
                metaAidR,
                rotl,
                orchaRd,
-               emmeans,
+               groundhog,
                clubSandwich,
                MuMIn,
                png,
@@ -89,6 +89,7 @@ pacman::p_load(tidyverse,
                here
 )
 
+groundhog.library("emmeans", '2022-01-01')
 # need for metafor to understand MuMin 
 eval(metafor:::.MuMIn)
 ```
@@ -493,15 +494,15 @@ round(i2_ml(mod),2) # almost no phylogenetic effect
 
 orchard_plot(mod, xlab = "log response ratio (lnRR)", group = "Study", data = dat)
 
-# some addition
-
-rob1 <- robust(mod, cluster = Study, adjust=FALSE, clubSandwich=FALSE)
-rob2 <- robust(mod, cluster = Study, adjust=TRUE, clubSandwich=FALSE)
-#rob3 <- robust(mod, cluster = Study, adjust=TRUE, clubSandwich=TRUE, verbose=TRUE)
-
-rob1
-rob2
-#rob3
+# # some addition
+# 
+# rob1 <- robust(mod, cluster = Study, adjust=FALSE, clubSandwich=FALSE)
+# rob2 <- robust(mod, cluster = Study, adjust=TRUE, clubSandwich=FALSE)
+# #rob3 <- robust(mod, cluster = Study, adjust=TRUE, clubSandwich=TRUE, verbose=TRUE)
+# 
+# rob1
+# rob2
+# #rob3
 
 # some extra
 # this still does not work 
@@ -668,10 +669,9 @@ phy_sex +
 ```
 
 
-
 ## Species-specific effects
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, include= FALSE}
 # getting blups (best linear predictors from the model)
 # getting blups (best linear predictors from the model)
 blups <- ranef(mod) 
@@ -761,16 +761,9 @@ spp.plot
 
 ```
 
-
-```{r, fig.width= 20, fig.cap = "Species-specific effects: the red line indicates the overall effect - very little variation among species"}
-knitr::include_graphics(here::here("figs", "fig_spp.png"))
-
-#![Species-specific effects: the red line indicates the overall effect - very little variation among species](figs/fig_spp.png){width="100%"}
-```
-
 ## Study-specific effect
 
-```{r, eval = FALSE}
+```{r, eval = FALSE, include= FALSE}
 study.plot <- ggplot(data = t.study2, aes(x = Mean, y = fct_reorder(Study, Species))) +
   geom_errorbarh(aes(xmin = Lower_bound, xmax = Upper_bound),  
                  height = 0, show.legend = FALSE, size = 0.5, alpha = 0.6) +
@@ -813,13 +806,14 @@ knitr::include_graphics(here::here("figs", "fig_study.png"))
 #![Species-specific effects: the red line indicates the overall effect - very little variation among species](figs/fig_spp.png){width="100%"}
 ```
 
+
 # Meta-regression (the same sex contrasts)
 
 ## Model function
 
 ```{r}
 
-# very 
+# no phylogeny
 
 mod_func <-  function(formula) {
         rma.mv(yi, 
@@ -952,6 +946,8 @@ orchard_plot(mod_eff1, mod = "Effect_type", xlab = "log response ratio (lnRR)", 
 ### Matuarity (`Maturity_at_treatment_ordinal`)
 
 ```{r}
+# there is probably no meaningful effect - not sure whether it should go into the main text
+
 # just pure effect
 mod_mat <- mod_func(formula = ~ Maturity_at_treatment_ordinal)
 summary(mod_mat)
@@ -971,6 +967,24 @@ test <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = 
 bubble_plot(test, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")#test2 <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", data = dat, group = "Study")
 bubble_plot(mod_mat, mod = "Maturity_at_treatment_ordinal", data = dat, group = "Study",)
 ```
+
+
+### Control_treatment (sham)
+
+```{r}
+# TODO - we need to udpdate
+
+mod_sham <- mod_func(formula = ~ Control_treatment-1)
+summary(mod_sham)
+# contrast
+mod_sham1 <- mod_func(formula = ~ Control_treatment)
+summary(mod_sham1)
+r2_ml(mod_sham1)
+# orchard plot
+orchard_plot(mod_sham1, mod = "Control_treatment", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+
+```
+
 
 ## Mulit-moderator models
 
@@ -1073,6 +1087,7 @@ prep <- qdrg(object = pub_bias, data = as.data.frame(dat), at = list(Effective_N
 # res<-marginal_means(model = pub_bias, data = dat, mod="1", weights = "prop") 
 # res$mod_table
 
+# probably this is most appoprate to report??
 # equal averaging
 res1 <- emmeans(prep, specs = "1", df = pub_bias$ddf, weights = "equal")
 res1
@@ -1084,7 +1099,10 @@ res2
 
 ## Leave-one-study-out analysis
 
+
 ```{r, eval = FALSE}
+# The function for leave-one-study-out
+
 dat$Study <- as.factor(dat$Study)
 
 LeaveOneOut_effectsize <- list()
@@ -1115,6 +1133,10 @@ MA_LOO <- lapply(LeaveOneOut_effectsize, function(x) est.func(x))%>% bind_rows %
 
 
 saveRDS(MA_LOO,file = here("Rdata", "MA_LOO.rds"))
+```
+
+
+```{r}
 #telling ggplot to stop reordering factors
 MA_LOO <- readRDS(file = here("Rdata", "MA_LOO.rds"))
 
@@ -1138,7 +1160,6 @@ leaveoneout_E <- ggplot(MA_LOO) +
   theme(axis.text.y = element_text(size = 6))
 
 leaveoneout_E
-
 ```
 
 
@@ -1169,12 +1190,12 @@ summary(rmod)
 
 i2_ml(rmod) 
 
-orchard_plot(rmod, xlab = "log response ratio (lnRR)", group = "Study", data = dat)
+orchard_plot(rmod, xlab = "log response ratio (lnRR)", group = "Study", data = rdat)
 
-# some addition
-
-rrob1 <- robust(rmod, cluster = Study, adjust=FALSE, clubSandwich=FALSE)
-rrob2 <- robust(rmod, cluster = Study, adjust=TRUE, clubSandwich=FALSE)
+# # some addition
+# 
+# rrob1 <- robust(rmod, cluster = Study, adjust=FALSE, clubSandwich=FALSE)
+# rrob2 <- robust(rmod, cluster = Study, adjust=TRUE, clubSandwich=FALSE)
 ```
 
 
@@ -1197,13 +1218,8 @@ r2_ml(rmod_sex)
 #rrob_sex1 <- robust(rmod_sex, cluster = Study, adjust=FALSE, clubSandwich=FALSE)
 #rrob_sex2 <- robust(rmod_sex, cluster = Study, adjust=TRUE, clubSandwich=FALSE)
 
+orchard_plot(rmod_sex, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = rdat)
 
-orchard_plot(rmod_sex, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat)
-
-# some addition
-# orchard plot
-test <- mod_results(mod_sex1, mod = "Sex", group = "Study", data = dat)
-orchard_plot(mod_sex1, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
 ```
 
 ### Maturity (in days)
@@ -1232,7 +1248,6 @@ r2_ml(rmod_mat)
 bubble_plot(rmod_mat, mod = "lnAge_ratio", group = "Study", data = rdat, by = "Sex", xlab = "ln(Treatment Day/Day to sexual maturity) [Rodent data only]", ylab = "ln(Response ratio)")
 
 ```
-
 
 
 # Meta-regression (different sex contrasts)
