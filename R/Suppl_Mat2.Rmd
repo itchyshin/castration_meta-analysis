@@ -607,7 +607,7 @@ phy_sex <- ggplot(data = ddat, aes(x = yi, y = Species_Latin)) +
   theme_bw() +
   scale_color_manual(values = c("#CC6677", "#88CCEE")) +
    labs(x = "lnRR (effect size)", y = "", colour = "Sex") +
-  theme(legend.position= c(0.95, 0.9), legend.justification = c(1, 0)) +
+  theme(legend.position= c(0.95, 0.85), legend.justification = c(1, 0)) +
   theme(legend.title = element_text(size = 9)) +
   #theme(legend.direction="horizontal") +
   theme(axis.text.y = element_blank()) +
@@ -620,7 +620,7 @@ filenames <- list.files("icons", pattern=".png", full.names=TRUE)
 ldf <- lapply(filenames, readPNG)
 names(ldf) <- substr(filenames, 7, 60)
 
-fig <- phy_sex +
+p0 <- phy_sex +
   annotation_custom(rasterGrob(ldf$Lampetra_fluviatilis.png), xmin = -1.5, xmax = -1, ymin = 1.5, ymax = 2.5) +
   annotation_custom(rasterGrob(ldf$Oncorhynchus_nerka.png), xmin = -1.5, xmax = -1, ymin = 2.5, ymax = 3.5) +
   annotation_custom(rasterGrob(ldf$Oncorhynchus_masou.png), xmin = -1.5, xmax = -1, ymin = 3.5, ymax = 4.5) +
@@ -644,18 +644,10 @@ fig <- phy_sex +
   annotation_custom(rasterGrob(ldf$Macaca_Fascicularis.png), xmin = -1.5, xmax = -1, ymin = 21.5, ymax = 22.5)  +
   annotation_custom(rasterGrob(ldf$Homo_sapiens.png), xmin = -1.5, xmax = -1, ymin = 22.5, ymax = 23.5) 
 
-fig
+p0
 ```
 
-
-
-```{r,fig.width= 20, fig.cap = "Study-specific effects: the red line indicates the overall effect - much variation exist among studies"}
-knitr::include_graphics(here::here("figs", "fig_study.png"))
-
-#![Species-specific effects: the red line indicates the overall effect - very little variation among species](figs/fig_spp.png){width="100%"}
-```
-
-![](../figs/fig_study.png)
+![](../figs/fig1a.png)
 
 # Meta-regression: uni-moderators {.tabset .tabset-pills .tabset-fade}
 
@@ -677,7 +669,8 @@ mod_func <-  function(formula) {
                data = dat, 
                test = "t",
                sparse = TRUE,
-               control=list(optimizer="optim", optmethod="BFGS")
+               control=list(optimizer="optim", optmethod="Nelder-Mead")
+                            #optmethod="BFGS")
                )
 }
 
@@ -695,7 +688,12 @@ r2_ml(mod_sex1)
 
 # orchard plot
 #test <- mod_results(mod_sex1, mod = "Sex", group = "Study", data = dat)
-orchard_plot(mod_sex1, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+p1 <- orchard_plot(mod_sex1, mod = "Sex", 
+                   xlab = "log response ratio (lnRR)", 
+                   group = "Study", data = dat, cb = F,
+                   angle = 0)
+
+p1
 ```
 
 ## Gonad Removal (`Sex_Gonads`)
@@ -707,6 +705,13 @@ dat$Sex_Gonads <- paste(dat$Sex, dat$Gonads_removed, sep = "_")
 
 dat$Sex_Gonads[grep("NA", dat$Sex_Gonads)] <- NA
 
+
+dat$Sex_Gonads <- factor(dat$Sex_Gonads, 
+       levels = c("Female_No", "Female_Yes", "Male_Yes"),
+       labels = c("Gonads removed \n(female)", "Gonads not removed \n(female)", "Gonads removed \n(male)") 
+       )
+
+
 mod_rem <- mod_func(formula = ~ Sex_Gonads-1)
 summary(mod_rem)
 # contrast
@@ -714,13 +719,25 @@ mod_rem1 <- mod_func(formula = ~ Sex_Gonads)
 summary(mod_rem1)
 r2_ml(mod_rem1)
 # orchard plot
-orchard_plot(mod_rem1, mod = "Sex_Gonads", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+p2 <- orchard_plot(mod_rem1, mod = "Sex_Gonads", 
+                   xlab = "log response ratio (lnRR)", 
+                   group = "Study", data = dat, cb = F,
+                   angle = 0) 
+
+p2
 ```
 
 
 ## Environmental (`Wild_or_semi_wild`)
 
 ```{r}
+
+dat$Wild_or_semi_wild <- factor(dat$Wild_or_semi_wild, 
+       levels = c("No", "Yes"),
+       labels = c("Others \n(e.g., lab, farm)" , "Wild or \nSemi-wild") 
+       )
+
+
 mod_env <- mod_func(formula = ~ Wild_or_semi_wild-1)
 summary(mod_env)
 # contrast
@@ -728,28 +745,24 @@ mod_env1 <- mod_func(formula = ~ Wild_or_semi_wild)
 summary(mod_env1)
 r2_ml(mod_env1)
 # orchard plot
-orchard_plot(mod_env1, mod = "Wild_or_semi_wild", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
-```
+p3 <- orchard_plot(mod_env1, mod = "Wild_or_semi_wild", 
+                   xlab = "log response ratio (lnRR)", 
+                   group = "Study", data = dat) +
+  scale_fill_manual(values = c("#D55E00", "#009E73")) +
+  scale_colour_manual(values = c("#D55E00", "#009E73")) 
 
-## Environmental x Sex (`Sex_Env`)
-
-```{r}
-# TODO - not sure wehther we should include this
-dat$Sex_Env <- paste(dat$Sex, dat$Wild_or_semi_wild, sep = "_")
-
-mod_senv <- mod_func(formula = ~ Sex_Env-1)
-summary(mod_env)
-# contrast
-mod_senv1 <- mod_func(formula = ~ Sex_Env)
-summary(mod_senv1)
-r2_ml(mod_senv1)
-# orchard plot
-orchard_plot(mod_senv1, mod = "Sex_Env", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+p3
 ```
 
 ## Controlled treatment (`Controlled_treatments`)
 
 ```{r}
+
+dat$Controlled_treatments <- factor(dat$Controlled_treatments, 
+       levels = c("No", "Yes"),
+       labels = c("Not controlled" , "Controlled") 
+       )
+
 mod_con <- mod_func(formula = ~ Controlled_treatments-1)
 summary(mod_con)
 # contrast
@@ -757,29 +770,22 @@ mod_con1 <- mod_func(formula = ~ Controlled_treatments)
 summary(mod_con1)
 r2_ml(mod_con1)
 # orchard plot
-orchard_plot(mod_con1, mod = "Controlled_treatments", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
-```
+p4 <- orchard_plot(mod_con1, mod = "Controlled_treatments", 
+                   xlab = "log response ratio (lnRR)",
+                   group = "Study", data = dat) +
+  scale_fill_manual(values = c("#D55E00", "#009E73")) +
+  scale_colour_manual(values = c("#D55E00", "#009E73")) 
 
-## Controlled x Sex (`Sex_Cont`)
-
-```{r}
-# TODO - not sure whether we should include this
-dat$Sex_Cont <- paste(dat$Sex, dat$Controlled_treatments, sep = "_")
-
-mod_scont <- mod_func(formula = ~ Sex_Cont-1)
-summary(mod_scont)
-# contrast
-mod_scont1 <- mod_func(formula = ~ Sex_Cont)
-summary(mod_scont1)
-r2_ml(mod_scont1)
-# orchard plot
-orchard_plot(mod_scont1, mod = "Sex_Cont", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+p4
 ```
 
 ## Sham (`Shamtreatment_moderator`)
 
 ```{r}
-# TODO - we need to udpdate
+dat$Shamtreatment_moderator <- factor(dat$Shamtreatment_moderator, 
+       levels = c("No", "Yes"),
+       labels = c("No sham" , "Sham-controlled") 
+       )
 
 mod_sham <- mod_func(formula = ~ Shamtreatment_moderator-1)
 summary(mod_sham)
@@ -788,47 +794,100 @@ mod_sham1 <- mod_func(formula = ~ Shamtreatment_moderator)
 summary(mod_sham1)
 r2_ml(mod_sham1)
 # orchard plot
-orchard_plot(mod_sham, mod = "Shamtreatment_moderator", xlab = "log response ratio (lnRR)", group = "Study", data = dat)
+p5 <- orchard_plot(mod_sham, mod = "Shamtreatment_moderator", 
+             xlab = "log response ratio (lnRR)", 
+             group = "Study", data = dat) +
+  scale_fill_manual(values = c("#D55E00", "#009E73")) +
+  scale_colour_manual(values = c("#D55E00", "#009E73")) 
 
+p5
 ```
 
 ## Type of effect sizes (`Effect_type`)
 
 ```{r}
+dat$Effect_type <- factor(dat$Effect_type, 
+       levels = c("longevity", "mortality"),
+       labels = c("Mean or meadian \nlongevity" , "Mortality \n(%)") 
+       )
+
 mod_eff <- mod_func(formula = ~ Effect_type-1)
 summary(mod_eff)
 # contrast
 mod_eff1 <- mod_func(formula = ~ Effect_type)
 summary(mod_eff1)
 r2_ml(mod_eff1)
+
 # orchard plot
-orchard_plot(mod_eff1, mod = "Effect_type", xlab = "log response ratio (lnRR)", group = "Study", data = dat, cb = F)
+p6 <- orchard_plot(mod_eff1, mod = "Effect_type", 
+             xlab = "log response ratio (lnRR)", 
+             group = "Study", data = dat, cb = F) +
+  scale_fill_manual(values = c("#D55E00", "#009E73")) +
+  scale_colour_manual(values = c("#D55E00", "#009E73")) 
+p6
 ```
 
 ## Matuarity (`Maturity_at_treatment_ordinal`)
 
 ```{r}
-# there is probably no meaningful effect - not sure whether it should go into the main text
 
-# just pure effect
 mod_mat <- mod_func(formula = ~ Maturity_at_treatment_ordinal)
 summary(mod_mat)
 r2_ml(mod_mat)
+
+# bubble plot
+p7 <- bubble_plot(mod_mat, 
+                  xlab = "Life-course stages",
+                  ylab = "lnRR (effect size)",
+            mod = "Maturity_at_treatment_ordinal", 
+            data = dat, group = "Study", cb = F)
+
+p7
+```
+
+## Sex x Matuarity
+
+```{r}
 # interaction with Sex
 mod_sex_mat <- mod_func(formula = ~ Sex*Maturity_at_treatment_ordinal)
 summary(mod_sex_mat)
+r2_ml(mod_mat)
 
 # different reference 
-mod_sex_mat1 <- mod_func(formula = ~ relevel(Sex,ref = "Male")*Maturity_at_treatment_ordinal)
-summary(mod_sex_mat1)
-
+# mod_sex_mat1 <- mod_func(formula = ~ relevel(Sex,ref = "Male")*Maturity_at_treatment_ordinal)
+# summary(mod_sex_mat1)
 
 # bubble plot
-#get_data_raw_cont(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
-test <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")
-bubble_plot(test, mod = "Maturity_at_treatment_ordinal", group = "Study", data = dat, by = "Sex")#test2 <- mod_results(mod_sex_mat, mod = "Maturity_at_treatment_ordinal", data = dat, group = "Study")
-bubble_plot(mod_mat, mod = "Maturity_at_treatment_ordinal", data = dat, group = "Study",)
+p8 <- bubble_plot(mod_sex_mat, 
+                  xlab = "Life-course stages",
+                  ylab = "lnRR (effect size)",
+            mod = "Maturity_at_treatment_ordinal", 
+            group = "Study", data = dat, by = "Sex")
+
+p8
 ```
+
+
+## Figure 1
+
+```{r, eval=FALSE}
+
+p0/ (p1 | p2) + plot_layout(nrow = 2, heights = c(2.5,1)) + plot_annotation(tag_levels = 'A')
+
+```
+
+![](../figs/fig1.png)
+
+## Figure 2
+
+```{r, eval=FALSE}
+
+(p3 | p4) / (p5 | p6) / (p7 | p8) + plot_layout(nrow = 3, heights = c(1,1, 1.5)) + plot_annotation(tag_levels = 'A')
+
+```
+
+![](../figs/fig2.png)
+
 
 # Meta-regression: mulit-moderators {.tabset .tabset-pills .tabset-fade}
 
@@ -867,7 +926,7 @@ avg2 <- model.avg(res_mod_full2)
 summary(avg2)
 
 # note 
-# controlling and wild-semi-wide is corelated: r = 0.34
+# controlling and wild-semi-wide is correlated: r = 0.34
 cor.test(as.numeric(dat$Controlled_treatments),as.numeric(dat$Wild_or_semi_wild))
 
 ```
@@ -878,12 +937,11 @@ cor.test(as.numeric(dat$Controlled_treatments),as.numeric(dat$Wild_or_semi_wild)
 
 ```{r}
 # raw funnel plot
-funnel(mod)
+# funnel plot - 
+ffunnel(mod)
 
 # residual funnel plot
-
 funnel(best2)
-#funnel(best6)
 
 ```
 
@@ -894,10 +952,10 @@ funnel(best2)
 dat$Effective_N <- 1/dat$Sample_size_sterilization + 1/dat$Sample_size_control
 
 egger_uni <- mod_func(formula = ~ sqrt(Effective_N))
-egger_uni2 <- mod_func(formula = ~ Effective_N)
+#egger_uni2 <- mod_func(formula = ~ Effective_N)
 
 summary(egger_uni)
-summary(egger_uni2)
+#summary(egger_uni2)
 ```
 
 ## Decline effect (time lag bias): uni-moderator
@@ -926,7 +984,7 @@ prep <- qdrg(object = pub_bias, data = as.data.frame(dat), at = list(Effective_N
 # res<-marginal_means(model = pub_bias, data = dat, mod="1", weights = "prop") 
 # res$mod_table
 
-# probably this is most appoprate to report??
+# this seems the most approprate to report
 # equal averaging
 res1 <- emmeans(prep, specs = "1", df = pub_bias$ddf, weights = "equal")
 res1
