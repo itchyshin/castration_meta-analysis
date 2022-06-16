@@ -61,18 +61,21 @@ pacman::p_load(tidyverse,
                patchwork,
                lme4,
                readxl,
-               #metaAidR,
+               emmeans,
                rotl,
                orchaRd,
                clubSandwich,
                MuMIn,
                png,
                grid,
-               here
+               here,
+               formatR
 )
 
-library(groundhog)
-groundhog.library("emmeans", '2022-04-22')
+# you may need to run this (we will plan to fix this)
+#library(groundhog)
+#groundhog.library("emmeans", '2022-01-01')
+
 # need for metafor to understand MuMin 
 eval(metafor:::.MuMIn)
 ```
@@ -149,7 +152,7 @@ folded_v <-function(mean, variance){
 #dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
 #dat_full <- read_csv(here("data", "data_15022022.csv"), na = c("", "NA"))
 dat_full <- read_csv(here("data", "data_05052022.csv"), na = c("", "NA"))
-glimpse(dat_full)
+#glimpse(dat_full)
 
 #loading data ####
 # TODO - ask Mike he sill wants to exclude "Vasectomy"
@@ -164,11 +167,11 @@ dim(dat_full)
 
 effect_type <- ifelse(str_detect(dat$Lifespan_parameter, "Me"), "longevity", "mortality")
 
-
-# effect-level ID
-dat$Species_Latin <- gsub("Macaca Fascicularis", "Macaca fascicularis", dat$Species_Latin) #fix a typo in species name
+#fix a typo in species name
+dat$Species_Latin <- gsub("Macaca Fascicularis", "Macaca fascicularis", dat$Species_Latin) 
 dat$Species_Latin <- gsub("Equus caballus", "Equus ferus", dat$Species_Latin)
-dat$Phylogeny <- gsub("Equus_caballus", "Equus_ferus", dat$Phylogeny)
+
+# creating the phylo column
 dat$Phylogeny <- sub(" ", "_",  dat$Species_Latin)
 dat$Effect_type <- effect_type
 dat$Effect_ID <- 1:nrow(dat)
@@ -374,7 +377,9 @@ sdat_long$Comp_type <- as.factor(rep(c("both_normal", "both_castrated"), each = 
 
 ```
 
-## Building phylogenetic tree
+# Building phylogenetic tree {.tabset .tabset-pills .tabset-fade}
+
+## Setting up 
 
 ```{r get species list, message = FALSE, echo = TRUE, eval = FALSE, warning = FALSE}
 names(dat)
@@ -393,14 +398,14 @@ table(taxa$approximate_match) #1 approximate match
 taxa[taxa$approximate_match == TRUE, ] ##lamperta fluviatilis (search_string) will be presented as Perca fluviatilis (uniquw_name)
 ```
 
-Get the initial tree.
+## Get the initial tree
 
 ```{r rotl species tree, warning = FALSE, results=FALSE, eval= FALSE, echo = TRUE}
 tree <- tol_induced_subtree(ott_ids = taxa[["ott_id"]], label_format = "name")  
 # plot(tree, cex=.6, label.offset =.1, no.margin = TRUE) visual check
 ```
 
-Check matching species and labels.
+## Check matching species & labels
 
 ```{r re-check tree labels, eval=F, echo=T}
 #check overlap and differences with the taxa list
@@ -428,9 +433,12 @@ write.tree(tree, file=here("data", "tree_rotl.tre")) #save the tree
 # tree$node.label <- NULL #you can delete internal node labels
 ```
 
-Plot phylogenetic tree
+## Plot phylogenetic tree
 
 ```{r plot phylogenetic tree, fig.width=10, fig.height=20, echo=TRUE, message=FALSE}
+
+tree <- read.tree(here("data/tree_rotl.tre"))
+
 plot(tree, cex=.6, label.offset =.1, no.margin = TRUE)
 
 # #or plot to pdf
@@ -448,7 +456,7 @@ plot(tree, cex=.6, label.offset =.1, no.margin = TRUE)
 V_matrix <- impute_covariance_matrix(vi = dat$vi, cluster = dat$Shared_control, r = 0.5)
 
 # phylogeny to model
-tree <- read.tree(here("data/tree_rotl.tre"))
+#tree <- read.tree(here("data/tree_rotl.tre"))
 tree <- compute.brlen(tree)
 
 cor_tree <- vcv(tree, corr = TRUE)
@@ -690,6 +698,10 @@ mod_sex1 <- mod_func(formula = ~ Sex)
 summary(mod_sex1)
 r2_ml(mod_sex1)
 
+```
+
+```{r, eval = F}
+
 # orchard plot
 #test <- mod_results(mod_sex1, mod = "Sex", group = "Study", data = dat)
 p1 <- orchard_plot(mod_sex1, mod = "Sex", 
@@ -699,6 +711,7 @@ p1 <- orchard_plot(mod_sex1, mod = "Sex",
 
 p1
 ```
+
 
 ## Gonad Removal (`Sex_Gonads`)
 
@@ -722,8 +735,12 @@ summary(mod_rem)
 mod_rem1 <- mod_func(formula = ~ Sex_Gonads)
 summary(mod_rem1)
 r2_ml(mod_rem1)
+
+```
+
+```{r, eval = F}
 # orchard plot
-p2 <- orchard_plot(mod_rem1, mod = "Sex_Gonads", 
+p2 <- orchard_plot(mod_rem, mod = "Sex_Gonads", 
                    xlab = "log response ratio (lnRR)", 
                    group = "Study", data = dat, cb = F,
                    angle = 0) 
@@ -748,6 +765,11 @@ summary(mod_env)
 mod_env1 <- mod_func(formula = ~ Wild_or_semi_wild)
 summary(mod_env1)
 r2_ml(mod_env1)
+
+```
+
+
+```{r, eval = F}
 # orchard plot
 p3 <- orchard_plot(mod_env1, mod = "Wild_or_semi_wild", 
                    xlab = "log response ratio (lnRR)", 
@@ -757,6 +779,7 @@ p3 <- orchard_plot(mod_env1, mod = "Wild_or_semi_wild",
 
 p3
 ```
+
 
 ## Controlled treatment (`Controlled_treatments`)
 
@@ -773,6 +796,10 @@ summary(mod_con)
 mod_con1 <- mod_func(formula = ~ Controlled_treatments)
 summary(mod_con1)
 r2_ml(mod_con1)
+
+```
+
+```{r, eval = F}
 # orchard plot
 p4 <- orchard_plot(mod_con1, mod = "Controlled_treatments", 
                    xlab = "log response ratio (lnRR)",
@@ -782,6 +809,8 @@ p4 <- orchard_plot(mod_con1, mod = "Controlled_treatments",
 
 p4
 ```
+
+
 
 ## Sham (`Shamtreatment_moderator`)
 
@@ -797,6 +826,10 @@ summary(mod_sham)
 mod_sham1 <- mod_func(formula = ~ Shamtreatment_moderator)
 summary(mod_sham1)
 r2_ml(mod_sham1)
+
+```
+
+```{r, eval = F}
 # orchard plot
 p5 <- orchard_plot(mod_sham, mod = "Shamtreatment_moderator", 
              xlab = "log response ratio (lnRR)", 
@@ -822,6 +855,10 @@ mod_eff1 <- mod_func(formula = ~ Effect_type)
 summary(mod_eff1)
 r2_ml(mod_eff1)
 
+
+```
+
+```{r, eval = F}
 # orchard plot
 p6 <- orchard_plot(mod_eff1, mod = "Effect_type", 
              xlab = "log response ratio (lnRR)", 
@@ -839,6 +876,9 @@ mod_mat <- mod_func(formula = ~ Maturity_at_treatment_ordinal)
 summary(mod_mat)
 r2_ml(mod_mat)
 
+```
+
+```{r, eval = F}
 # bubble plot
 p7 <- bubble_plot(mod_mat, 
                   xlab = "Life-course stages",
@@ -848,6 +888,7 @@ p7 <- bubble_plot(mod_mat,
 
 p7
 ```
+
 
 ## Sex x Matuarity
 
@@ -861,6 +902,10 @@ r2_ml(mod_mat)
 # mod_sex_mat1 <- mod_func(formula = ~ relevel(Sex,ref = "Male")*Maturity_at_treatment_ordinal)
 # summary(mod_sex_mat1)
 
+```
+
+```{r, eval = F}
+
 # bubble plot
 p8 <- bubble_plot(mod_sex_mat, 
                   xlab = "Life-course stages",
@@ -870,6 +915,7 @@ p8 <- bubble_plot(mod_sex_mat,
 
 p8
 ```
+
 
 
 ## Figure 1
@@ -922,7 +968,7 @@ res_mod_full <- readRDS(file = here("Rdata", "res_mod_full"))
 res_mod_full2<- subset(res_mod_full, delta <= 2) #, recalc.weights=FALSE)
 
 # the best model according to the delta 2
-#best2 <- mod_func(formula = ~ Controlled_treatments + Wild_or_semi_wild)
+best2 <- mod_func(formula = ~ Controlled_treatments + Wild_or_semi_wild)
 #summary(best2)
 
 # model varaged coeffisents
@@ -982,7 +1028,9 @@ pub_bias <- mod_func(formula = ~ Effective_N + Controlled_treatments + Wild_or_s
   
 summary(pub_bias)
 
-prep <- qdrg(object = pub_bias, data = as.data.frame(dat), at = list(Effective_N = 0, cYear = 0))
+data <- as.data.frame(dat)
+
+prep <- qdrg(object = pub_bias, data = data, at = list(Effective_N = 0, cYear = 0))
 
 
 # res<-marginal_means(model = pub_bias, data = dat, mod="1", weights = "prop") 
@@ -1061,7 +1109,7 @@ leaveoneout_E <- ggplot(MA_LOO) +
 leaveoneout_E
 ```
 
-# Meta-analysis (rodent data only)
+# Meta-analysis: rodent data only {.tabset .tabset-pills .tabset-fade}
 
 ## Main model
 
@@ -1150,7 +1198,7 @@ bubble_plot(rmod_mat, mod = "lnAge_ratio", group = "Study", data = rdat, by = "S
 
 
 
-# Contrasting sexes: full data {.tabset .tabset_fade .tabset_pills} 
+# Contrasting sexes: full data {.tabset .tabset-pills .tabset-fade}
 
 ## Calcuating aboslute effect sizes
 
@@ -1187,7 +1235,8 @@ r2_ml(mod_comp)
 
 ```{r}
 # visualizing the result
-orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = dat_long, cb = F)
+orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", 
+             group = "Study", data = dat_long, cb = F)
 ```
 
 
@@ -1224,9 +1273,10 @@ summary(mod_comp_sex)
 r2_ml(mod_comp_sex)
 ```
 
-```{r}
+```{r, eval = FALSE}
 
-d0 <- orchard_plot(mod_comp_sex, mod = "Comp_type_Sex1", xlab = "absolute log response ratio (lnRR)", group = "Study", data = dat_long, cb = T, angle = 90)
+d0 <- orchard_plot(mod_comp_sex, mod = "Comp_type_Sex1", xlab = "log response ratio (lnRR)", 
+                   group = "Study", data = dat_long, cb = T, angle = 90)
 
 d0
 ```
@@ -1239,17 +1289,22 @@ d0
 # VCV matrix
 abs_V_matrix_long <- impute_covariance_matrix(vi = dat_long$abs_vi, cluster = dat_long$Shared_control, r = 0.5)
 
-abs_mod_comp_sex0 <-  rma.mv(abs_yi, V = abs_V_matrix_long, mod = ~ Comp_type_Sex1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ),data = dat_long, test = "t")
+abs_mod_comp_sex0 <-  rma.mv(abs_yi, V = abs_V_matrix_long, mod = ~ Comp_type_Sex1 , 
+                             random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ),
+                             data = dat_long, test = "t")
 summary(abs_mod_comp_sex0) 
 
-abs_mod_comp_sex <-  rma.mv(abs_yi, V = abs_V_matrix_long, mod = ~ Comp_type_Sex1 -1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs), data = dat_long, test = "t")
+abs_mod_comp_sex <-  rma.mv(abs_yi, V = abs_V_matrix_long, mod = ~ Comp_type_Sex1 -1 , 
+                            random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs), 
+                            data = dat_long, test = "t")
 summary(abs_mod_comp_sex) 
-
+r2_ml(abs_mod_comp_sex)
 ```
 
-```{r}
+```{r, eval = FALSE}
 # visualizing results
-d1 <- orchard_plot(abs_mod_comp_sex, mod = "Comp_type_Sex1", xlab = "absolute log response ratio (lnRR)", group = "Study", data = dat_long, cb = T, angle = 45)
+d1 <- orchard_plot(abs_mod_comp_sex, mod = "Comp_type_Sex1", xlab = "absolute log response ratio (lnRR)", 
+                   group = "Study", data = dat_long, cb = T, angle = 90)
 
 d1
 ```
@@ -1264,24 +1319,25 @@ f_dat_log<- female_dat_log %>% group_by(Effect_ID) %>% summarise(yi2 = abs_yi[2]
                                                      vi2 = abs_vi[1] + abs_vi[2] -
                                                        0.5*sqrt(abs_vi[1]*abs_vi[2]),
                                                      Species_Latin = Species_Latin[1],
-                                                     Study = Study[1])
+                                                     Study = Study[1],
+                                                     Shared_control = Shared_control[1])
 
 # variance covariance matrix
-V_matrix_long1 <- impute_covariance_matrix(vi = f_dat_log$vi, cluster = f_dat_log$Shared_control, r = 0.5)
+V_matrix_long1 <- impute_covariance_matrix(vi = f_dat_log$vi2, cluster = f_dat_log$Shared_control, r = 0.5)
 
 # we can run - some heteroscad models
 # this does not improve model
-f_mod_long <-  rma.mv(yi2, V = vi2, 
+f_mod_long <-  rma.mv(yi2, V = V_matrix_long1, 
                  random = list(~1|Species_Latin, 
                                ~1|Study, 
                                ~1|Effect_ID), 
                  data = f_dat_log, test = "t")
 summary(f_mod_long) 
-r2_ml(f_mod_long)
+i2_ml(f_mod_long)
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 # Pair figures
 d2 <- ggplot(female_dat_log, aes(x = Comp_type, y = abs_yi)) + 
   geom_point(aes(size = sqrt(1/abs_vi), col = Comp_type), alpha = 0.5) +
@@ -1300,13 +1356,14 @@ d2 <- ggplot(female_dat_log, aes(x = Comp_type, y = abs_yi)) +
 	theme(legend.background = element_blank()) +
 	theme(axis.text.y = element_text(size = 10, colour ="black",
 	                                                        hjust = 0.5,
-	                                                        angle = 45))
+	                                                        angle = 90))
 
 d2
 ```
 
-```{r}
-d3 <- orchard_plot(f_mod_long, xlab = "absolute log response ratio (lnRR)", group = "Study", data = f_dat_log, cb = F, angle = 45) + 
+```{r, eval = FALSE}
+d3 <- orchard_plot(f_mod_long, xlab = "absolute log response ratio (lnRR)", group = "Study", 
+                   data = f_dat_log, cb = F, angle = 90) + 
   scale_fill_manual(values =  "#999933") +
   scale_colour_manual(values =  "#999933") +
   scale_x_discrete(labels = "Female sterlized/Male normal vs. \nFemale normal/Male normal") +
@@ -1324,23 +1381,24 @@ m_dat_log<- male_dat_log %>% group_by(Effect_ID) %>% summarise(yi2 = abs_yi[2] -
                                                      vi2 = abs_vi[1] + abs_vi[2] -
                                                        0.5*sqrt(abs_vi[1]*abs_vi[2]),
                                                      Species_Latin = Species_Latin[1],
-                                                     Study = Study[1])
+                                                     Study = Study[1],
+                                                     Shared_control = Shared_control[1])
 
 # variance covariance matrix
-V_matrix_long2 <- impute_covariance_matrix(vi = m_dat_log$vi, cluster = m_dat_log$Shared_control, r = 0.5)
+V_matrix_long2 <- impute_covariance_matrix(vi = m_dat_log$vi2, cluster = m_dat_log$Shared_control, r = 0.5)
 
 # we can run - some hetero-scad models
 # this does not improve model
-m_mod_long <-  rma.mv(yi2, V = vi2, 
+m_mod_long <-  rma.mv(yi2, V = V_matrix_long2, 
                  random = list(~1|Species_Latin, 
                                ~1|Study, 
                                ~1|Effect_ID), 
                  data = m_dat_log, test = "t")
 summary(m_mod_long) 
-r2_ml(m_mod_long)
+i2_ml(m_mod_long)
 ```
 
-```{r}
+```{r, eval = FALSE}
 
 d4 <- ggplot(male_dat_log, aes(x =Comp_type, y = abs_yi)) + 
   geom_point(aes(size = sqrt(1/abs_vi), col = Comp_type), alpha = 0.5) +
@@ -1366,8 +1424,9 @@ d4
 
 
 
-```{r}
-d5 <- orchard_plot(m_mod_long, xlab = "absolute log response ratio (lnRR)", group = "Study", data = m_dat_log, cb = F, angle = 90) + 
+```{r, eval = FALSE}
+d5 <- orchard_plot(m_mod_long, xlab = "absolute log response ratio (lnRR)", 
+                   group = "Study", data = m_dat_log, cb = F, angle = 90) + 
    scale_fill_manual(values = "#332288") +
   scale_colour_manual(values = "#332288") +
 scale_x_discrete(labels = "Male sterlized/Female normal vs. \nMale normal/Female normal") +
@@ -1378,13 +1437,15 @@ d5
 
 ## Figure 4
 
-```{r}
+```{r, eval = FALSE}
 patch <- d0| d1| (d2/d4)| (d3/d5) + plot_layout()
 
 patch +  plot_annotation(tag_levels = "A")
 ```
 
-# Contrasting sexes: all-combination data {.tabset .tabset_fade .tabset_pills} 
+![](../figs/fig4.png)
+
+# Contrasting sexes: all-combination data {.tabset .tabset-pills .tabset-fade}
 
 ## Comparing F/M vs. F$\star$/M$\star$
 
@@ -1440,7 +1501,14 @@ r2_ml(mod_comp3b)
 
 ```{r}
 # visualizing results
-orchard_plot(mod_comp3b, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = sdat_long, angle = 45)
+orchard_plot(mod_comp3b, mod = "Comp_type", xlab = "log response ratio (lnRR)", 
+             group = "Study", data = sdat_long, angle = 45)
 
+```
+
+# Software and package versions
+
+```{r}
+sessionInfo() %>% pander()
 ```
 
