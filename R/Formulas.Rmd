@@ -1,0 +1,54 @@
+---
+title: "Formulas"
+author: "Shinichi Nakagawa"
+date: '2022-06-29'
+output:
+  word_document: default
+  html_document: default
+---
+
+$$
+\ln{\text{RR}} = \ln \left( \frac{m_{T}} {m_{C}}\right) + 
+\frac{1}{2} \left(\frac{\text{CV}_T^2} {n_{T}} - \frac{\text{CV}_C^2} {n_{C}}\right), 
+$$
+
+
+$$
+v(\ln{\text{RR}}) = \frac{\text{CV}_T^2} {n_{T}} + \frac{\text{CV}_C^2} {n_{C}} +
+\frac{\text{CV}_T^4} {2n_{T}^2} + \frac{\text{CV}_C^4} {2n_{C}^2},
+$$
+
+$n_{T} = n_{C} = n$
+
+$\text{CV}_C = sd_T/m_T$ and $\text{CV}_C = sd_C/m_C$
+
+
+$$
+\ln{\text{RR}} = \ln \left( \frac{m_{T}} {m_{C}}\right) + 
+\frac{1}{2} \left(\frac{\sum_{i=1}^{k}{\text{CV}_{Ti}^2}/k} {n_{T}} - \frac{\sum_{i=1}^{k}{\text{CV}_{Ci}^2}/k} {n_{C}}\right), 
+$$
+
+$$
+v(\ln{\text{RR}})= \frac{\sum_{i=1}^{k}{\text{CV}_{Ti}^2}/k} {n_{T
+}} + \frac{\sum_{i=1}^{k}{\text{CV}_{Ci}^2}/k} {n_{C}} +
+\frac{(\sum_{i=1}^{k}{\text{CV}_{Ti}^2}/k)^2} {2n_{T}^2} + 
+\frac{(\sum_{i=1}^{k}{\text{CV}_{Ci}^2}/k)^2} {2n_{C}^2} 
+$$
+
+
+$$
+f(M) = \arcsin(\sqrt{M})
+$$
+
+$$
+\text{var}(f(M)) = \frac{1}{8}
+$$
+
+
+$$
+\ln{\text{RR}}_{folded} = \sqrt{v(\ln{\text{RR}})\frac{2}{\pi}} \exp\left(-{\frac{\ln{\text{RR}}^2}{2v(\ln{\text{RR}})}}\right)+\ln{\text{RR}}\left[1-2\Phi\left(-\frac{\ln{\text{RR}}}{\sqrt{v(\ln{\text{RR}})}}\right) \right],
+$$
+
+$$
+v(\ln{\text{RR}})_{folded} = \ln{\text{RR}}^2 + v(\ln{\text{RR}}) - \ln{\text{RR}}_{folded}^2
+$$

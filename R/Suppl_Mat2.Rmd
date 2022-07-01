@@ -61,7 +61,7 @@ pacman::p_load(tidyverse,
                patchwork,
                lme4,
                readxl,
-               emmeans,
+               #emmeans,
                rotl,
                orchaRd,
                clubSandwich,
@@ -73,8 +73,8 @@ pacman::p_load(tidyverse,
 )
 
 # you may need to run this (we will plan to fix this)
-#library(groundhog)
-#groundhog.library("emmeans", '2022-01-01')
+library(groundhog)
+groundhog.library("emmeans", '2022-04-01')
 
 # need for metafor to understand MuMin 
 eval(metafor:::.MuMIn)
@@ -661,7 +661,7 @@ p0
 
 ![](../figs/fig1a.png)
 
-# Meta-regression: uni-moderators {.tabset .tabset-pills .tabset-fade}
+# Meta-regression: non-full models {.tabset .tabset-pills .tabset-fade}
 
 ## Model function
 
@@ -939,7 +939,7 @@ p0/ (p1 | p2) + plot_layout(nrow = 2, heights = c(2.5,1)) + plot_annotation(tag_
 ![](../figs/fig2.png)
 
 
-# Meta-regression: mulit-moderators {.tabset .tabset-pills .tabset-fade}
+# Meta-regression: full model {.tabset .tabset-pills .tabset-fade}
 
 ## Full model
 
@@ -1005,6 +1005,8 @@ egger_uni <- mod_func(formula = ~ sqrt(Effective_N))
 #egger_uni2 <- mod_func(formula = ~ Effective_N)
 
 summary(egger_uni)
+
+#egger_uni2 <- mod_func(formula = ~ Effective_N)
 #summary(egger_uni2)
 ```
 
@@ -1028,21 +1030,15 @@ pub_bias <- mod_func(formula = ~ Effective_N + Controlled_treatments + Wild_or_s
   
 summary(pub_bias)
 
-data <- as.data.frame(dat)
+prep1 <- qdrg(object = pub_bias, data = dat, at = list(Effective_N = 0, cYear = 0))
 
-prep <- qdrg(object = pub_bias, data = data, at = list(Effective_N = 0, cYear = 0))
-
-
-# res<-marginal_means(model = pub_bias, data = dat, mod="1", weights = "prop") 
-# res$mod_table
-
-# this seems the most approprate to report
+# this seems the most appropriate to report
 # equal averaging
-res1 <- emmeans(prep, specs = "1", df = pub_bias$ddf, weights = "equal")
+res1 <- emmeans(prep1, specs = "1", df = pub_bias$ddf, weights = "equal")
 res1
 
-# proportional to what we have 
-res2 <- emmeans(prep, specs = "1", df = pub_bias$ddf, weights = "prop")
+# proportional to what we have
+res2 <- emmeans(prep1, specs = "1", df = pub_bias$ddf, weights = "prop")
 res2
 ```
 
