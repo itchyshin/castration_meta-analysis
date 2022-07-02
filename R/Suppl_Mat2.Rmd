@@ -144,8 +144,6 @@ folded_v <-function(mean, variance){
 
 # Data preparation & processing {.tabset .tabset-pills .tabset-fade}
 
--   I will put two data sets here to show with meta-data
-
 ## Main data
 
 ```{r}
@@ -256,6 +254,7 @@ dim(dat_long)
 ```
 
 TODO - add meta-data...
+
 
 ## Rodent data
 
