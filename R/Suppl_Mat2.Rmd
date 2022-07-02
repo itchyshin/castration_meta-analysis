@@ -246,6 +246,10 @@ dat_long <- rbind(dat1, dat2)
 dat_long$Obs <- factor(1:dim(dat_long)[[1]])
 dat_long$Comp_type <- as.factor(rep(c("both_normal", "one_castrated"), each = dim(dat_long)[[1]]/2))
 
+dat_long$Comp_type_Sex <- paste(dat_long$Comp_type, dat_long$Sex, sep = "_")
+
+dat_long$yi <- ifelse(dat_long$Comp_type_Sex ==  "one_castrated_Female" | dat_long$Comp_type_Sex == "both_normal_Female", -1*dat_long$yi, dat_long$yi)
+
 dat_long %>% filter(!is.na(yi), !is.na(vi)) -> dat_long
 
 dim(dat_long)
@@ -898,9 +902,9 @@ mod_sex_mat <- mod_func(formula = ~ Sex*Maturity_at_treatment_ordinal)
 summary(mod_sex_mat)
 r2_ml(mod_mat)
 
-# different reference 
-# mod_sex_mat1 <- mod_func(formula = ~ relevel(Sex,ref = "Male")*Maturity_at_treatment_ordinal)
-# summary(mod_sex_mat1)
+# different reference (gives whether male slope is significant)
+mod_sex_mat1 <- mod_func(formula = ~ relevel(Sex,ref = "Male")*Maturity_at_treatment_ordinal)
+summary(mod_sex_mat1)
 
 ```
 
@@ -1239,30 +1243,19 @@ orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)",
 ## Separating by sex (M/F or F/M vs. M$\star$/F or F$\star$/M)
 
 ```{r}
-# as interaction
-dat_long$Comp_type_Sex <- paste(dat_long$Comp_type, dat_long$Sex, sep = "_")
+
+# naming factors
+# dat_long$Comp_type <-  factor(dat_long$Comp_type, 
+#                                  levels = c("one_castrated", "both_normal"),
+#                                  labels = c("one_castrated", "both_normal") )
 
 dat_long$Comp_type_Sex1 <- factor(dat_long$Comp_type_Sex, 
                                  levels = c("one_castrated_Male", "both_normal_Male",
                                             "one_castrated_Female", "both_normal_Female"),
                                  labels = c("Male sterlized/\nFemale normal",
-                                            "Male normal/\nFemale normal",
-                                            "Female sterlized/\nMale normal",
-                                            "Female normal/\nMale normal") )
-
-dat_long$Comp_type <-  factor(dat_long$Comp_type, 
-                                 levels = c("one_castrated", "both_normal"),
-                                 labels = c("one_castrated", "both_normal") )
-
-#test1 <- factor(test, levels = c("C","B", "A"), labels = c("Carol", "Beth", "Andrew"))
-
-dat_long$Comp_type_Sex1 <- factor(dat_long$Comp_type_Sex, 
-                                 levels = c("one_castrated_Male", "both_normal_Male",
-                                            "one_castrated_Female", "both_normal_Female"),
-                                 labels = c("Male sterlized/\nFemale normal",
-                                            "Male normal/\nFemale normal",
-                                            "Female sterlized/\nMale normal",
-                                            "Female normal/\nMale normal") )
+                                            "Male normal/\nFemale normal (B)",
+                                            "Male normal/\nFemale sterlized",
+                                            "Male normal/\nFemale normal (A)") )
 
 mod_comp_sex <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type_Sex1 -1 , random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs ),data = dat_long, test = "t")
 summary(mod_comp_sex) 
@@ -1272,7 +1265,8 @@ r2_ml(mod_comp_sex)
 ```{r, eval = FALSE}
 
 d0 <- orchard_plot(mod_comp_sex, mod = "Comp_type_Sex1", xlab = "log response ratio (lnRR)", 
-                   group = "Study", data = dat_long, cb = T, angle = 90)
+                   group = "Study", data = dat_long, cb = T, angle = 90) +
+  geom_vline(xintercept=2.5, size = 0.2)
 
 d0
 ```
@@ -1300,7 +1294,8 @@ r2_ml(abs_mod_comp_sex)
 ```{r, eval = FALSE}
 # visualizing results
 d1 <- orchard_plot(abs_mod_comp_sex, mod = "Comp_type_Sex1", xlab = "absolute log response ratio (lnRR)", 
-                   group = "Study", data = dat_long, cb = T, angle = 90)
+                   group = "Study", data = dat_long, cb = T, angle = 90) +
+  geom_vline(xintercept=2.5, size = 0.2)
 
 d1
 ```
@@ -1339,7 +1334,7 @@ d2 <- ggplot(female_dat_log, aes(x = Comp_type, y = abs_yi)) +
   geom_point(aes(size = sqrt(1/abs_vi), col = Comp_type), alpha = 0.5) +
   geom_line(aes(group = Effect_ID), alpha = 0.5) + 
   labs(y = "absolute log response ratio (lnRR)", x = "", size = "Precision (1/SE)") + 
-  scale_x_discrete(labels = c("one_castrated" = "Female sterlized/\nMale normal", "both_normal" = "Female normal/\nMale normal")) +
+  scale_x_discrete(labels = c("one_castrated" ="Male sterlized/\nFemale normal", "both_normal" = "Male normal/\nFemale normal (A)")) +
   #xlim(c("one_castrated","both_normal"))+
   ylim(0, 1.25) + 
   scale_color_manual(values = c("#DDCC77", "#117733")) +
@@ -1362,7 +1357,7 @@ d3 <- orchard_plot(f_mod_long, xlab = "absolute log response ratio (lnRR)", grou
                    data = f_dat_log, cb = F, angle = 90) + 
   scale_fill_manual(values =  "#999933") +
   scale_colour_manual(values =  "#999933") +
-  scale_x_discrete(labels = "Female sterlized/Male normal vs. \nFemale normal/Male normal") +
+  scale_x_discrete(labels = "Male sterlized/Female normal vs. \nMale normal/Female normal (A)") +
   ylim(-0.9, 0.5)
 d3
 ```
@@ -1400,7 +1395,7 @@ d4 <- ggplot(male_dat_log, aes(x =Comp_type, y = abs_yi)) +
   geom_point(aes(size = sqrt(1/abs_vi), col = Comp_type), alpha = 0.5) +
   geom_line(aes(group = Effect_ID), alpha = 0.5) + 
   labs(y = "absolute log response ratio (lnRR)", x = "", size = "Precision (1/SE)") + 
-  scale_x_discrete(labels = c("one_castrated" ="Male sterlized/\nFemale normal", "both_normal" = "Male normal/\nFemale normal")) +
+  scale_x_discrete(labels = c("one_castrated" ="Male sterlized/\nFemale normal", "both_normal" = "Male normal/\nFemale normal (B)")) +
   ylim(0, 1.25) + 
   #coord_cartesian(xlim = c(0.5, 2.5)) +
   scale_color_manual(values = c("#88CCEE", "#CC6677")) +
@@ -1425,7 +1420,7 @@ d5 <- orchard_plot(m_mod_long, xlab = "absolute log response ratio (lnRR)",
                    group = "Study", data = m_dat_log, cb = F, angle = 90) + 
    scale_fill_manual(values = "#332288") +
   scale_colour_manual(values = "#332288") +
-scale_x_discrete(labels = "Male sterlized/Female normal vs. \nMale normal/Female normal") +
+scale_x_discrete(labels = "Male sterlized/Female normal vs. \nMale normal/Female normal (B)") +
   ylim(-0.9, 0.5)
 
 d5
@@ -1446,6 +1441,14 @@ patch +  plot_annotation(tag_levels = "A")
 ## Comparing F/M vs. F$\star$/M$\star$
 
 ```{r}
+
+# naming factor
+# names factors
+sdat_long$Comp_type <-  factor(sdat_long$Comp_type, 
+                                 levels = c("both_castrated", "both_normal"),
+                                 labels = c("Male sterlized/\nFemale sterlized",
+                                            "Male normal/\nFemale normal") )
+
 # VCV matrix
 V_matrix_long <- impute_covariance_matrix(vi = sdat_long$vi, cluster = sdat_long$Shared_control, r = 0.5)
 
@@ -1454,19 +1457,31 @@ V_matrix_long <- impute_covariance_matrix(vi = sdat_long$vi, cluster = sdat_long
 # tree <- compute.brlen(tree)
 # cor_tree <- vcv(tree, corr = TRUE)
 
-# this does not improve model
+# this is normal model
 mod_comp2 <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type - 1, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs),data = sdat_long, test = "t")
 summary(mod_comp2) 
 
 mod_comp2b <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs),data = sdat_long, test = "t")
 summary(mod_comp2b) 
 r2_ml(mod_comp2b)
+
+mod_comp2c <-  rma.mv(yi, V = V_matrix_long, 
+                     mod = ~ Comp_type, 
+                     random = list( ~1|Species_Latin, ~1|Study, ~Comp_type|Effect_ID),
+                    rho = 0, struct = "HCS",
+                     data = sdat_long, test = "t")
+summary(mod_comp2c) 
+
+AIC(mod_comp2, mod_comp2c)
+
 ```
 
 
-```{r}
+```{r, eval = F}
 # visualizing results
-orchard_plot(mod_comp2, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = sdat_long, angle = 45)
+f1 <- orchard_plot(mod_comp2c, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = sdat_long, angle = 90)
+
+f1
 ```
 
 
@@ -1493,14 +1508,35 @@ mod_comp3b <-  rma.mv(abs_yi, V = abs_V_matrix_long,
                       data = sdat_long, test = "t")
 summary(mod_comp3b) 
 r2_ml(mod_comp3b)
+
+mod_comp3c <-  rma.mv(abs_yi, V = abs_V_matrix_long, 
+                      mod = ~ Comp_type, 
+                      random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID),
+                      #rho = 0, struct = "HCS",
+                      data = sdat_long, test = "t")
+
+AIC(mod_comp3, mod_comp3c)
+
 ```
 
-```{r}
+```{r, eval = F}
 # visualizing results
-orchard_plot(mod_comp3b, mod = "Comp_type", xlab = "log response ratio (lnRR)", 
-             group = "Study", data = sdat_long, angle = 45)
+f2 <- orchard_plot(mod_comp3b, mod = "Comp_type", xlab = "log response ratio (lnRR)", 
+             group = "Study", data = sdat_long, angle = 90)
 
+f2
 ```
+
+
+## Figure 5
+
+```{r, eval = FALSE}
+patch <- f1/f2 + plot_layout()
+
+patch +  plot_annotation(tag_levels = "A")
+```
+
+![](../figs/fig5.png)
 
 # Software and package versions
 
