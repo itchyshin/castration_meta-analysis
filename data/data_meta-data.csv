@@ -4,6 +4,7 @@ Controlled_treatments,Whether treatment allocation and environments were derived
 Type_of_sterilization,Type of sterilization used
 Gonads_removed,Whether gonads were removed as part of the sterilization
 Control_treatment,Type of treatment/sham manipulation applied to controls
+Shamtreatment_moderator,Whether control groups involved sham treatments or not
 Sex,Sex in which the effect of sterilization was assessed
 Species_Latin,Latin name of species
 Species,Common name

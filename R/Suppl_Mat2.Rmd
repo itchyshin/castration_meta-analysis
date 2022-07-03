@@ -183,7 +183,7 @@ kable(dat, "html") %>%
     height = "250px")
 ```
 
-## Calcuating effect size for the main data
+## Calculating effect size for the main data
 
 ```{r}
 # let's get CVs
@@ -253,12 +253,9 @@ dat_long %>% filter(!is.na(yi), !is.na(vi)) -> dat_long
 dim(dat_long)
 ```
 
-TODO - add meta-data...
-
-
 ## Rodent data
 
-This data is a subset of the main data only including data from rodents. This is used to test the effect of sterilization/castration on life stage (for these species, we were able to get more fine scale data)
+This data is a subset of the main data only including data from rodents. This is used to test the effect of sterilization/castration on life stage (for these species, we were able to get more fine scale data). This dataset has two more variables: 1) Age_at_treatment (age in days when treatment was applied) and 2) Day_to_maturity (age in days when animals become mature). 
 
 ```{r}
 #sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
@@ -291,7 +288,7 @@ kable(rdat, "html") %>%
     height = "250px")
 ```
 
-## Calcuating effect size for the rodent data
+## Calculating effect size for the rodent data
 
 ```{r}
 # let's get CVs
@@ -309,9 +306,11 @@ rdat$vi <- ifelse(effect_type_r == "longevity", lnrrm(rdat$Treatment_lifespan_va
 str(rdat)
 ```
 
+This dataset has 
+
 ## All-combination data
 
-This data sets is a subset of the main data and this includes only study which has all 4 groups: 1) control females, 2) control males, 3) treated females and 4) treated males. 
+This data sets is a subset of the main data and this includes only study which has all 4 groups: 1) control females, 2) control males, 3) treated females and 4) treated males.
 
 ```{r}
 #sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
@@ -331,7 +330,8 @@ kable(sdat, "html") %>%
     height = "250px")
 ```
 
-## Calcuating effect size for the matching data
+
+## Calculating effect size for the matching data
 
 ```{r}
 # we create a longer data format
@@ -340,35 +340,35 @@ sdat1 <- sdat
 sdat2 <- sdat
 # lnRR
 
-# here we create the ratio of F/M 
+# here we create the ratio of M/F
 sdat1$yi <- ifelse(effect_type_s == "longevity", 
-                  lnrrm(sdat$Female_control_lifespan_variable, sdat$Male_control_lifespan_variable,
-                        sdat$Sample_size_female_control, sdat$Sample_size_male_control, 
+                  lnrrm(sdat$Male_control_lifespan_variable, sdat$Female_control_lifespan_variable,
+                        sdat$Sample_size_male_control, sdat$Sample_size_female_control, 
                         cvs[["cv2_cont"]],cvs[["cv2_cont"]])[[1]], 
-                  lnrrp(sdat$Female_control_lifespan_variable, sdat$Male_control_lifespan_variable, 
-                        sdat$Sample_size_female_control,  sdat$Sample_size_male_control)[[1]])
+                  lnrrp(sdat$Male_control_lifespan_variable, sdat$Female_control_lifespan_variable, 
+                        sdat$Sample_size_male_control,  sdat$Sample_size_female_control)[[1]])
 
 sdat1$vi <- ifelse(effect_type_s == "longevity", 
-                  lnrrm(sdat$Female_control_lifespan_variable, sdat$Male_control_lifespan_variable,
-                        sdat$Sample_size_female_control, sdat$Sample_size_male_control, 
+                  lnrrm(sdat$Male_control_lifespan_variable, sdat$Female_control_lifespan_variable,
+                        sdat$Sample_size_male_control, sdat$Sample_size_female_control, 
                         cvs[["cv2_cont"]],cvs[["cv2_cont"]])[[2]], 
-                  lnrrp(sdat$Female_control_lifespan_variable, sdat$Male_control_lifespan_variable, 
-                        sdat$Sample_size_female_control,  sdat$Sample_size_male_control)[[2]])
+                  lnrrp(sdat$Male_control_lifespan_variable, sdat$Female_control_lifespan_variable, 
+                        sdat$Sample_size_male_control,  sdat$Sample_size_female_control)[[2]])
 
-# here we create CF/CM
+# here we create CM/CF
 sdat2$yi <- ifelse(effect_type_s == "longevity", 
-                  lnrrm(sdat$Female_sterilization_lifespan_variable, sdat$Male_sterilization_lifespan_variable,
-                        sdat$Sample_size_female_sterilization, sdat$Sample_size_male_sterilization, 
+                  lnrrm(sdat$Male_sterilization_lifespan_variable, sdat$Female_sterilization_lifespan_variable,
+                        sdat$Sample_size_male_sterilization, sdat$Sample_size_female_sterilization, 
                         cvs[["cv2_trt"]],cvs[["cv2_trt"]])[[1]], 
-                  lnrrp(sdat$Female_sterilization_lifespan_variable, sdat$Male_sterilization_lifespan_variable, 
-                        sdat$Sample_size_female_sterilization,  sdat$Sample_size_male_sterilization)[[1]])
+                  lnrrp(sdat$Male_sterilization_lifespan_variable, sdat$Female_sterilization_lifespan_variable, 
+                        sdat$Sample_size_male_sterilization,  sdat$Sample_size_female_sterilization)[[1]])
 
 sdat2$vi <-  ifelse(effect_type_s == "longevity", 
-                   lnrrm(sdat$Female_sterilization_lifespan_variable, sdat$Male_sterilization_lifespan_variable,
-                         sdat$Sample_size_female_sterilization, sdat$Sample_size_male_sterilization, 
+                   lnrrm(sdat$Male_sterilization_lifespan_variable, sdat$Female_sterilization_lifespan_variable,
+                         sdat$Sample_size_male_sterilization, sdat$Sample_size_female_sterilization, 
                          cvs[["cv2_trt"]],cvs[["cv2_trt"]])[[2]], 
-                   lnrrp(sdat$Female_sterilization_lifespan_variable, sdat$Male_sterilization_lifespan_variable, 
-                         sdat$Sample_size_female_sterilization,  sdat$Sample_size_male_sterilization)[[2]])
+                   lnrrp(sdat$Male_sterilization_lifespan_variable, sdat$Female_sterilization_lifespan_variable, 
+                         sdat$Sample_size_male_sterilization,  sdat$Sample_size_female_sterilization)[[2]])
 
 # merging sdata frames
 sdat_long <- rbind(sdat1, sdat2)
@@ -380,9 +380,22 @@ sdat_long$Comp_type <- as.factor(rep(c("both_normal", "both_castrated"), each = 
 
 ```
 
+## Meta-data
+
+```{r}
+#sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
+mdat <- read_csv(here("data", "data_meta-data.csv")) 
+
+
+kable(mdat, "html") %>% 
+  kable_styling("striped", position = "left") %>% 
+  scroll_box(width = "100%", 
+    height = "250px")
+```
+
 # Building phylogenetic tree {.tabset .tabset-pills .tabset-fade}
 
-## Setting up 
+## Setting up
 
 ```{r get species list, message = FALSE, echo = TRUE, eval = FALSE, warning = FALSE}
 names(dat)
@@ -515,7 +528,6 @@ summary(mod2)
 anova(mod, mod2) # they are not significantly different
 
 ```
-
 
 ## Sex-wise species-level effect (Figure 1A)
 
@@ -715,7 +727,6 @@ p1 <- orchard_plot(mod_sex1, mod = "Sex",
 p1
 ```
 
-
 ## Gonad Removal (`Sex_Gonads`)
 
 ```{r}
@@ -751,7 +762,6 @@ p2 <- orchard_plot(mod_rem, mod = "Sex_Gonads",
 p2
 ```
 
-
 ## Environmental (`Wild_or_semi_wild`)
 
 ```{r}
@@ -771,7 +781,6 @@ r2_ml(mod_env1)
 
 ```
 
-
 ```{r, eval = F}
 # orchard plot
 p3 <- orchard_plot(mod_env1, mod = "Wild_or_semi_wild", 
@@ -782,7 +791,6 @@ p3 <- orchard_plot(mod_env1, mod = "Wild_or_semi_wild",
 
 p3
 ```
-
 
 ## Controlled treatment (`Controlled_treatments`)
 
@@ -812,8 +820,6 @@ p4 <- orchard_plot(mod_con1, mod = "Controlled_treatments",
 
 p4
 ```
-
-
 
 ## Sham (`Shamtreatment_moderator`)
 
@@ -892,7 +898,6 @@ p7 <- bubble_plot(mod_mat,
 p7
 ```
 
-
 ## Sex x Matuarity
 
 ```{r}
@@ -919,8 +924,6 @@ p8 <- bubble_plot(mod_sex_mat,
 p8
 ```
 
-
-
 ## Figure 1
 
 ```{r, eval=FALSE}
@@ -940,7 +943,6 @@ p0/ (p1 | p2) + plot_layout(nrow = 2, heights = c(2.5,1)) + plot_annotation(tag_
 ```
 
 ![](../figs/fig2.png)
-
 
 # Meta-regression: full model {.tabset .tabset-pills .tabset-fade}
 
@@ -1134,13 +1136,11 @@ summary(rmod)
 i2_ml(rmod) 
 ```
 
-
 ```{r}
 # visualizing the result
 orchard_plot(rmod, xlab = "log response ratio (lnRR)", group = "Study", data = rdat)
 
 ```
-
 
 ## Sex difference (`Sex`)
 
@@ -1163,7 +1163,6 @@ r2_ml(rmod_sex)
 # visualizing the result
 orchard_plot(rmod_sex, mod = "Sex", xlab = "log response ratio (lnRR)", group = "Study", data = rdat)
 ```
-
 
 ## Maturity (in days)
 
@@ -1195,8 +1194,6 @@ r2_ml(rmod_mat)
 bubble_plot(rmod_mat, mod = "lnAge_ratio", group = "Study", data = rdat, by = "Sex", xlab = "ln(Treatment Day/Day to sexual maturity) [Rodent data only]", ylab = "ln(Response ratio)")
 ```
 
-
-
 # Contrasting sexes: full data {.tabset .tabset-pills .tabset-fade}
 
 ## Calcuating aboslute effect sizes
@@ -1212,7 +1209,7 @@ sdat_long <- sdat_long %>% mutate(abs_yi = folded_mu(yi, vi),
                       abs_vi = folded_v(yi, vi))
 ```
 
-## Comparing M/F or F/M vs. M$\star$/F or F$\star$/M
+## Comparing M/F vs. M$\star$/F or M/F$\star$
 
 ```{r}
 # variance covariance matrix
@@ -1231,15 +1228,13 @@ summary(mod_comp)
 r2_ml(mod_comp)
 ```
 
-
 ```{r}
 # visualizing the result
 orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)", 
              group = "Study", data = dat_long, cb = F)
 ```
 
-
-## Separating by sex (M/F or F/M vs. M$\star$/F or F$\star$/M)
+## Separating by sex (M/F vs. M$\star$/F or M/F$\star$)
 
 ```{r}
 
@@ -1270,7 +1265,6 @@ d0 <- orchard_plot(mod_comp_sex, mod = "Comp_type_Sex1", xlab = "log response ra
 d0
 ```
 
-
 ## Absolute effect size comparaion (M/F or F/M vs. M$\star$/F or F$\star$/M)
 
 ```{r}
@@ -1299,8 +1293,7 @@ d1 <- orchard_plot(abs_mod_comp_sex, mod = "Comp_type_Sex1", xlab = "absolute lo
 d1
 ```
 
-
-## Contrasting F/M and F$\star$/M
+## Contrasting M/F and M/F$\star$
 
 ```{r}
 # female
@@ -1325,7 +1318,6 @@ f_mod_long <-  rma.mv(yi2, V = V_matrix_long1,
 summary(f_mod_long) 
 i2_ml(f_mod_long)
 ```
-
 
 ```{r, eval = FALSE}
 # Pair figures
@@ -1412,8 +1404,6 @@ d4 <- ggplot(male_dat_log, aes(x =Comp_type, y = abs_yi)) +
 d4 
 ```
 
-
-
 ```{r, eval = FALSE}
 d5 <- orchard_plot(m_mod_long, xlab = "absolute log response ratio (lnRR)", 
                    group = "Study", data = m_dat_log, cb = F, angle = 90) + 
@@ -1437,12 +1427,11 @@ patch +  plot_annotation(tag_levels = "A")
 
 # Contrasting sexes: all-combination data {.tabset .tabset-pills .tabset-fade}
 
-## Comparing F/M vs. F$\star$/M$\star$
+## Comparing M/F vs. M$\star$/F$\star$
 
 ```{r}
 
 # naming factor
-# names factors
 sdat_long$Comp_type <-  factor(sdat_long$Comp_type, 
                                  levels = c("both_castrated", "both_normal"),
                                  labels = c("Male sterlized/\nFemale sterlized",
@@ -1456,14 +1445,16 @@ V_matrix_long <- impute_covariance_matrix(vi = sdat_long$vi, cluster = sdat_long
 # tree <- compute.brlen(tree)
 # cor_tree <- vcv(tree, corr = TRUE)
 
-# this is normal model
+# without heteroscedasticity
 mod_comp2 <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type - 1, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs),data = sdat_long, test = "t")
 summary(mod_comp2) 
 
+# without heteroscedasticity
 mod_comp2b <-  rma.mv(yi, V = V_matrix_long, mod = ~ Comp_type, random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID, ~1|Obs),data = sdat_long, test = "t")
 summary(mod_comp2b) 
 r2_ml(mod_comp2b)
 
+# with heteroscedasticity
 mod_comp2c <-  rma.mv(yi, V = V_matrix_long, 
                      mod = ~ Comp_type, 
                      random = list( ~1|Species_Latin, ~1|Study, ~Comp_type|Effect_ID),
@@ -1471,20 +1462,22 @@ mod_comp2c <-  rma.mv(yi, V = V_matrix_long,
                      data = sdat_long, test = "t")
 summary(mod_comp2c) 
 
+# Comparing models with and without heteroscedasticity
 AIC(mod_comp2, mod_comp2c)
 
 ```
 
-
 ```{r, eval = F}
 # visualizing results
-f1 <- orchard_plot(mod_comp2c, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", data = sdat_long, angle = 90)
+f1 <- orchard_plot(mod_comp2c, mod = "Comp_type", xlab = "log response ratio (lnRR)", group = "Study", 
+                   data = sdat_long, angle = 90) +
+  scale_fill_manual(values = c("#D55E00", "#009E73")) +
+  scale_colour_manual(values = c("#D55E00", "#009E73")) 
 
 f1
 ```
 
-
-## Absolute effect size comparaion (F/M vs. F$\star$/M$\star$)
+## Absolute effect size comparaion (M/F vs. M$\star$/F$\star$)
 
 ```{r}
 
@@ -1492,7 +1485,7 @@ f1
 abs_V_matrix_long <- impute_covariance_matrix(vi = sdat_long$abs_vi, cluster = sdat_long$Shared_control, r = 0.5)
 
 
-# this does not improve model
+# with heteroscedasticity
 mod_comp3 <-  rma.mv(abs_yi, V = abs_V_matrix_long, 
                      mod = ~ Comp_type - 1, 
                      random = list( ~1|Species_Latin, ~1|Study, ~Comp_type|Effect_ID),
@@ -1500,6 +1493,7 @@ mod_comp3 <-  rma.mv(abs_yi, V = abs_V_matrix_long,
                      data = sdat_long, test = "t")
 summary(mod_comp3) 
 
+# with heteroscedasticity
 mod_comp3b <-  rma.mv(abs_yi, V = abs_V_matrix_long, 
                       mod = ~ Comp_type, 
                       random = list( ~1|Species_Latin, ~1|Study, ~Comp_type|Effect_ID),
@@ -1508,24 +1502,27 @@ mod_comp3b <-  rma.mv(abs_yi, V = abs_V_matrix_long,
 summary(mod_comp3b) 
 r2_ml(mod_comp3b)
 
+# without heteroscedasticity
 mod_comp3c <-  rma.mv(abs_yi, V = abs_V_matrix_long, 
                       mod = ~ Comp_type, 
                       random = list( ~1|Species_Latin, ~1|Study, ~1|Effect_ID),
                       #rho = 0, struct = "HCS",
                       data = sdat_long, test = "t")
 
+# Comparing models with and without heteroscedasticity
 AIC(mod_comp3, mod_comp3c)
 
 ```
 
 ```{r, eval = F}
 # visualizing results
-f2 <- orchard_plot(mod_comp3b, mod = "Comp_type", xlab = "log response ratio (lnRR)", 
-             group = "Study", data = sdat_long, angle = 90)
+f2 <- orchard_plot(mod_comp3b, mod = "Comp_type", xlab = "absolute log response ratio (lnRR)", 
+             group = "Study", data = sdat_long, angle = 90) +
+  scale_fill_manual(values = c("#D55E00", "#009E73")) +
+  scale_colour_manual(values = c("#D55E00", "#009E73")) 
 
 f2
 ```
-
 
 ## Figure 5
 
@@ -1542,4 +1539,3 @@ patch +  plot_annotation(tag_levels = "A")
 ```{r}
 sessionInfo() %>% pander()
 ```
-
