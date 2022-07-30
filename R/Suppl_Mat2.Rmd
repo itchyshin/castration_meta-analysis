@@ -156,7 +156,7 @@ dat_full <- read_csv(here("data", "data_05052022.csv"), na = c("", "NA"))
 #glimpse(dat_full)
 
 #loading data ####
-# TODO - ask Mike he sill wants to exclude "Vasectomy"
+
 dat_full %>% filter(is.na(Treatment_lifespan_variable) == FALSE) %>% 
   filter(Type_of_sterilization != "Vasectomy") %>% 
   mutate_if(is.character, as.factor) -> dat
