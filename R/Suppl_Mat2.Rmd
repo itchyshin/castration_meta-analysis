@@ -61,7 +61,7 @@ pacman::p_load(tidyverse,
                patchwork,
                lme4,
                readxl,
-               emmeans,
+               #emmeans,
                rotl,
                orchaRd,
                clubSandwich,
@@ -76,8 +76,8 @@ pacman::p_load(tidyverse,
 )
 
 # you may need to run this (we will plan to fix this)
-#library(groundhog)
-#groundhog.library("emmeans", '2022-04-01')
+library(groundhog)
+groundhog.library("emmeans", '2022-04-01')
 
 # need for metafor to understand MuMin 
 eval(metafor:::.MuMIn)
