@@ -1662,7 +1662,7 @@ patch +  plot_annotation(tag_levels = "A")
 ```
 
 ![](../figs/fig4A.png)
-## Figure 4 Extra
+## Figure S1
 
 Related figures 
 
