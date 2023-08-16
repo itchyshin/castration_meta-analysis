@@ -73,6 +73,8 @@ matched <- match((dat_m_surg$phylogeny), colnames(cor_tree))
 
 which(is.na(matched))
 
+#grep("Equus",colnames(cor_tree))
+
 dat_m_surg$phylogeny[8] <- "Aonyx_cinerea"
 dat_m_surg$phylogeny[18] <- "Bubalus_arnee"
 dat_m_surg$phylogeny[31] <- "Cervus_elaphus"
@@ -103,12 +105,15 @@ dat_m_surg[which(dat_m_surg$yi == max(dat_m_surg$yi)), "species"]
 
 # exclusing outlier
 
+dat_m_surg2 <- dat_m_surg[-which(dat_m_surg$yi == max(dat_m_surg$yi)), ]
+
 mod_m_surg2 <- rma.mv(yi, V = vi, 
                      random = list(~1|species),
-                     data = dat_m_surg[-which(dat_m_surg$yi == max(dat_m_surg$yi)), ])
+                     data = dat_m_surg2)
 summary(mod_m_surg2)
 i2_ml(mod_m_surg2)
 
+orchard_plot(mod_m_surg2,xlab = "lnRR (male surgical)", group = "species", data = dat_m_surg2, g = FALSE)
 #######################
 # female hormonal data 
 ########################

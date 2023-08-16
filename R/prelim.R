@@ -557,6 +557,7 @@ summary(mod_n2)
 # mod_h2 <-  rma.mv(yi, V = vi, mod = ~Comp_type*Sex, random = list(~1|Phylogeny, ~1|Species_Latin, ~Comp_type_Sex|Study, ~1|Effect_ID, ~Comp_type_Sex|Obs), rho = 0, struct = "HCS", R = list(Phylogeny = cor_tree), data = dat_long, test = "t")
 # summary(mod_h2) 
 
+# struct = "DIAG"
 
 # as interaction
 
