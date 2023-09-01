@@ -79,13 +79,14 @@ dat_m_surg$phylogeny[8] <- "Aonyx_cinerea"
 dat_m_surg$phylogeny[18] <- "Bubalus_arnee"
 dat_m_surg$phylogeny[31] <- "Cervus_elaphus"
 dat_m_surg$phylogeny[45] <- "Equus_africanus"
+# meta-analysis
+dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
+dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
+
 
 #[1]  8 18 31 45
 
 # adjusting phylogeny
-
-
-
 
 mod_m_surg <- rma.mv(yi, V = vi, 
                      random = list(
@@ -96,7 +97,7 @@ mod_m_surg <- rma.mv(yi, V = vi,
 summary(mod_m_surg)
 i2_ml(mod_m_surg)
 
-orchard_plot(mod_m_surg,xlab = "lnRR (male surgical)", group = "species", data = dat_m_surg, g = FALSE)
+orchard_plot(mod_m_surg, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
 
 # there is an outliner
 dat_m_surg[which(dat_m_surg$yi == max(dat_m_surg$yi)), "species"]
@@ -113,7 +114,9 @@ mod_m_surg2 <- rma.mv(yi, V = vi,
 summary(mod_m_surg2)
 i2_ml(mod_m_surg2)
 
-orchard_plot(mod_m_surg2,xlab = "lnRR (male surgical)", group = "species", data = dat_m_surg2, g = FALSE)
+orchard_plot(mod_m_surg2,xlab = "lnRR (male surgical)", group = "species",  g = FALSE)
+
+
 #######################
 # female hormonal data 
 ########################
@@ -144,9 +147,9 @@ matched <- match((dat_f_horm$phylogeny), colnames(cor_tree))
 
 which(is.na(matched))
 
-# meta-analysis
-dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
-dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
+# # meta-analysis
+# dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
+# dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
 
 mod_f_horm <- rma.mv(yi, V = vi, 
                      random = list(
@@ -157,7 +160,12 @@ mod_f_horm <- rma.mv(yi, V = vi,
 summary(mod_f_horm)
 i2_ml(mod_f_horm)
 
-orchard_plot(mod_f_horm,xlab = "lnRR (female hormonal)", group = "species", data = dat_f_horm, g = FALSE)
+orchard_plot(mod_f_horm,xlab = "lnRR (female hormonal)", group = "species", g = FALSE)
+
+
+# putting all together
+
+
 
 ######################
 # female surgical data
@@ -200,7 +208,45 @@ mod_f_surg <- rma.mv(yi, V = vi,
 summary(mod_f_surg)
 i2_ml(mod_f_surg)
 
-orchard_plot(mod_f_surg, xlab = "lnRR (female surgical)", group = "species", data = data_f_surg, g = FALSE)
+robust(mod_f_surg, cluster = species)
+
+orchard_plot(mod_f_surg, xlab = "lnRR (female surgical)", group = "species", g = FALSE)
+
+########################
+# putting data together
+########################
+dat_m_surg
+dat_f_horm
+data_f_surg
+
+# getting other dat
+
+# 
+dat_m_horm <- dat %>% filter(is.na(Male_Hormonal_Mean) == FALSE, is.na(Female_None_Mean) == FALSE) %>% 
+  mutate(F_control_m = Female_None_Mean,
+         F_control_sd = sqrt(Female.None)*Female_None_SE,
+         F_control_n = Female.None,
+         F_hormonal_m = Female_Hormonal_Mean,
+         F_hormonal_sd = sqrt(Female.Hormonal)*Female_Hormonal_SE,
+         F_hormonal_n = Female.Hormonal,
+         species = species,
+         phylogeny = gsub(" ","_", species))
+
+# getting effect size
+
+dat_f_horm <- escalc("ROM", 
+                     m1i = F_hormonal_m,
+                     m2i = F_control_m,
+                     sd1i = F_hormonal_sd,
+                     sd2i = F_control_sd,
+                     n1i = F_hormonal_n,
+                     n2i = F_control_n,
+                     data = dat_f_horm,
+)
+
+
+
+###################################
 
 ##############################
 # data: gamma - mortality risk
@@ -223,17 +269,33 @@ names(dat2)
 dat2_m_surg <- dat2 %>% filter(is.na(Male_Surgical_Mean) == FALSE) %>% 
   mutate(yi = Male_Surgical_Mean ,
          vi = Male_Surgical_SE^2,
-         species = species)
+         species = species,
+         phylogeny = gsub(" ","_", species))
+
+matched <- match((dat2_m_surg$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+dat2_m_surg$phylogeny[8] <- "Aonyx_cinerea"
+dat2_m_surg$phylogeny[18] <- "Bubalus_arnee"
+dat2_m_surg$phylogeny[31] <- "Cervus_elaphus"
+dat2_m_surg$phylogeny[45] <- "Equus_africanus"
+# meta-analysis
+dat2_f_horm$phylogeny[3] <- "Aonyx_cinerea"
+dat2_f_horm$phylogeny[14] <- "Cervus_elaphus"
+
 
 hist(dat2_m_surg$yi)
 
 mod2_m_surg <- rma.mv(yi, V = vi, 
-                     random = list(~1|species),
+                     random = list(~1|species,
+                     ~1|phylogeny), 
+                     R = list(phylogeny = cor_tree), 
                      data = dat2_m_surg)
 summary(mod2_m_surg)
 i2_ml(mod2_m_surg)
 
-orchard_plot(mod2_m_surg,xlab = "lnHR (male surgical)", group = "species", data = dat2_m_surg, g = FALSE)
+orchard_plot(mod2_m_surg,xlab = "lnHR (male surgical)", group = "species",g = FALSE)
 
 # there is an outliner
 dat2_m_surg[which(dat2_m_surg$yi == min(dat2_m_surg$yi)), "species"]
@@ -246,18 +308,29 @@ dat2_m_surg[which(dat2_m_surg$yi == min(dat2_m_surg$yi)), "species"]
 dat2_f_horm <- dat2 %>% filter(is.na(Female_Hormonal_Mean) == FALSE) %>% 
   mutate(yi = Female_Hormonal_Mean ,
          vi = Female_Hormonal_SE^2,
-         species = species)
+         species = species,
+         phylogeny = gsub(" ","_", species))
+
+matched <- match((dat2_f_horm$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+# meta-analysis
+dat2_f_horm$phylogeny[3] <- "Aonyx_cinerea"
+dat2_f_horm$phylogeny[14] <- "Cervus_elaphus"
 
 hist(dat2_f_horm$yi)
 
 
 mod2_f_horm <- rma.mv(yi, V = vi, 
-                     random = list(~1|species),
+                     random = list(~1|species,
+                                   ~1|phylogeny), 
+                     R = list(phylogeny = cor_tree), 
                      data = dat2_f_horm)
 summary(mod2_f_horm)
 i2_ml(mod2_f_horm)
 
-orchard_plot(mod2_f_horm,xlab = "lnHR (female hormonal)", group = "species", data = dat2_f_horm, g = FALSE)
+orchard_plot(mod2_f_horm,xlab = "lnHR (female hormonal)", group = "species",  g = FALSE)
 
 ######################
 # female surgical data
@@ -265,15 +338,18 @@ orchard_plot(mod2_f_horm,xlab = "lnHR (female hormonal)", group = "species", dat
 dat2_f_surg<- dat2 %>% filter(is.na(Female_Surgical_Mean) == FALSE) %>% 
   mutate(yi = Female_Surgical_Mean ,
          vi = Female_Surgical_SE^2,
-         species = species)
+         species = species,
+         phylogeny = gsub(" ","_", species))
 
 hist(dat2_f_surg$yi)
 
 
 mod2_f_surg <- rma.mv(yi, V = vi, 
-                     random = list(~1|species),
+                     random = list(~1|species,
+                                   ~1|phylogeny), 
+                     R = list(phylogeny = cor_tree), 
                      data = dat2_f_surg)
 summary(mod2_f_surg)
 i2_ml(mod2_f_surg)
 
-orchard_plot(mod2_f_surg, xlab = "lnHR (female surgical)", group = "species", data = dat2_f_surg, g = FALSE)
+orchard_plot(mod2_f_surg, xlab = "lnHR (female surgical)", group = "species", g = FALSE)
