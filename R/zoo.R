@@ -45,7 +45,9 @@ dat_m_surg <- dat %>% filter(is.na(Male_Surgical_Mean) == FALSE, is.na(Male_None
          M_surgical_sd = sqrt(Male.Surgical)*Male_Surgical_SE,
          M_surgical_n = Male.Surgical,
          species = species,
-         phylogeny = gsub(" ","_", species))
+         phylogeny = gsub(" ","_", species),
+         sex = "male",
+         type = "surgical")
 
   
 # getting effect size
@@ -80,8 +82,8 @@ dat_m_surg$phylogeny[18] <- "Bubalus_arnee"
 dat_m_surg$phylogeny[31] <- "Cervus_elaphus"
 dat_m_surg$phylogeny[45] <- "Equus_africanus"
 # meta-analysis
-dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
-dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
+#dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
+#dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
 
 
 #[1]  8 18 31 45
@@ -128,7 +130,9 @@ dat_f_horm <- dat %>% filter(is.na(Female_Hormonal_Mean) == FALSE, is.na(Female_
          F_hormonal_sd = sqrt(Female.Hormonal)*Female_Hormonal_SE,
          F_hormonal_n = Female.Hormonal,
          species = species,
-         phylogeny = gsub(" ","_", species))
+         phylogeny = gsub(" ","_", species),
+         sex = "female",
+         type = "hormonal")
 
 # getting effect size
 
@@ -148,8 +152,8 @@ matched <- match((dat_f_horm$phylogeny), colnames(cor_tree))
 which(is.na(matched))
 
 # # meta-analysis
-# dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
-# dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
+dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
+dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
 
 mod_f_horm <- rma.mv(yi, V = vi, 
                      random = list(
@@ -163,14 +167,10 @@ i2_ml(mod_f_horm)
 orchard_plot(mod_f_horm,xlab = "lnRR (female hormonal)", group = "species", g = FALSE)
 
 
-# putting all together
-
-
-
 ######################
 # female surgical data
 ######################
-data_f_surg<- dat %>% filter(is.na(Female_Surgical_Mean) == FALSE, is.na(Female_None_Mean) == FALSE) %>% 
+dat_f_surg<- dat %>% filter(is.na(Female_Surgical_Mean) == FALSE, is.na(Female_None_Mean) == FALSE) %>% 
   mutate(F_control_m = Female_None_Mean,
          F_control_sd = sqrt(Female.None)*Female_None_SE,
          F_control_n = Female.None,
@@ -178,19 +178,21 @@ data_f_surg<- dat %>% filter(is.na(Female_Surgical_Mean) == FALSE, is.na(Female_
          F_surgical_sd = sqrt(Female.Surgical)*Female_Surgical_SE,
          F_surgical_n = Female.Surgical,
          species = species,
-         phylogeny = gsub(" ","_", species))
+         phylogeny = gsub(" ","_", species),
+         sex = "female",
+         type = "surgical")
 
 
 # getting effect size
 
-data_f_surg <- escalc("ROM", 
+dat_f_surg <- escalc("ROM", 
                      m1i = F_surgical_m,
                      m2i = F_control_m,
                      sd1i = F_surgical_sd,
                      sd2i = F_control_sd,
                      n1i = F_surgical_n,
                      n2i = F_control_n,
-                     data = data_f_surg,
+                     data = dat_f_surg,
 )
 
 # matching tree data_f_surg
@@ -204,7 +206,7 @@ mod_f_surg <- rma.mv(yi, V = vi,
                        ~1|species,
                        ~1|phylogeny), 
                      R = list(phylogeny = cor_tree), 
-                     data = data_f_surg)
+                     data = dat_f_surg)
 summary(mod_f_surg)
 i2_ml(mod_f_surg)
 
@@ -215,35 +217,206 @@ orchard_plot(mod_f_surg, xlab = "lnRR (female surgical)", group = "species", g =
 ########################
 # putting data together
 ########################
-dat_m_surg
-dat_f_horm
-data_f_surg
-
 # getting other dat
 
 # 
-dat_m_horm <- dat %>% filter(is.na(Male_Hormonal_Mean) == FALSE, is.na(Female_None_Mean) == FALSE) %>% 
+dat_m_horm <- dat %>% filter(is.na(Male_Hormonal_Mean) == FALSE, is.na(Male_None_Mean) == FALSE) %>% 
+  mutate(M_control_m = Male_None_Mean,
+         M_control_sd = sqrt(Male.None)*Male_None_SE,
+         M_control_n = Male.None,
+         M_hormonal_m = Male_Hormonal_Mean,
+         M_hormonal_sd = sqrt(Male.Hormonal)*Male_Hormonal_SE,
+         M_hormonal_n = Male.Hormonal,
+         species = species,
+         phylogeny = gsub(" ","_", species),
+         sex = "male",
+         type = "hormonal")
+
+dat_m_horm <- escalc("ROM", 
+                     m1i = M_hormonal_m,
+                     m2i = M_control_m,
+                     sd1i = M_hormonal_sd,
+                     sd2i = M_control_sd,
+                     n1i = M_hormonal_n,
+                     n2i = M_control_n,
+                     data = dat_m_horm,
+)
+
+dim(dat_m_horm)
+
+# checking the match
+matched <- match((dat_m_horm$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+#grep("Equus",colnames(cor_tree))
+
+dat_m_immu <- dat %>% filter(is.na(Male_Immunological_Mean) == FALSE, 
+    is.na(Male_None_Mean) == FALSE) %>%
+  mutate(M_control_m = Male_None_Mean,
+         M_control_sd = sqrt(Male.None)*Male_None_SE,
+         M_control_n = Male.None,
+         M_immunol_m = Male_Immunological_Mean,
+         M_immunol_sd = sqrt(Male.Immunological)*Male_Immunological_SE,
+         M_immunol_n = Male.Immunological,
+         species = species,
+         phylogeny = gsub(" ","_", species),
+         sex = "male",
+         type = "immunological")
+
+dat_m_immu <- escalc("ROM", 
+                     m1i = M_immunol_m,
+                     m2i = M_control_m,
+                     sd1i = M_immunol_sd,
+                     sd2i = M_control_sd,
+                     n1i = M_immunol_n,
+                     n2i = M_control_n,
+                     data = dat_m_immu,
+)
+
+dim(dat_m_immu)
+
+# checking the match
+matched <- match((dat_m_immu$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+dat_f_immu <- dat %>% filter(is.na(Female_Immunological_Mean) == FALSE, 
+    is.na(Female_None_Mean) == FALSE) %>%
   mutate(F_control_m = Female_None_Mean,
          F_control_sd = sqrt(Female.None)*Female_None_SE,
          F_control_n = Female.None,
-         F_hormonal_m = Female_Hormonal_Mean,
-         F_hormonal_sd = sqrt(Female.Hormonal)*Female_Hormonal_SE,
-         F_hormonal_n = Female.Hormonal,
+         F_immunol_m = Female_Immunological_Mean,
+         F_immunol_sd = sqrt(Female.Immunological)*Female_Immunological_SE,
+         F_immunol_n = Female.Immunological,
          species = species,
-         phylogeny = gsub(" ","_", species))
+         phylogeny = gsub(" ","_", species),
+         sex = "female",
+         type = "immunological")
 
-# getting effect size
-
-dat_f_horm <- escalc("ROM", 
-                     m1i = F_hormonal_m,
+dat_f_immu <- escalc("ROM", 
+                     m1i = F_immunol_m,
                      m2i = F_control_m,
-                     sd1i = F_hormonal_sd,
+                     sd1i = F_immunol_sd,
                      sd2i = F_control_sd,
-                     n1i = F_hormonal_n,
+                     n1i = F_immunol_n,
                      n2i = F_control_n,
-                     data = dat_f_horm,
+                     data = dat_f_immu,
 )
 
+dim(dat_f_immu)
+
+# checking the match
+matched <- match((dat_f_immu$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+rbind(
+dat_m_horm[ , c(1, 58:62)], # 1
+dat_m_surg[ , c(1, 58:62)], # 2
+dat_f_horm[ , c(1, 58:62)], # 3 
+dat_f_surg[ , c(1, 58:62)], # 4
+dat_m_immu[ , c(1, 58:62)], # 5
+dat_f_immu[ , c(1, 58:62)] # 6
+) -> dat_all
+
+dim(dat_all)
+
+# checking the match
+matched <- match((dat_all$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+dat_all$phylogeny[1] <- "Aonyx_cinerea"
+
+dat_all$obs_id <- factor(1:nrow(dat_all))
+
+dat_all %>% mutate(sex_type = paste(sex, type, sep = "_")) -> dat_all
+
+mod_all <- rma.mv(yi, V = vi,
+                     random = list(
+                       ~1|species,
+                       ~1|phylogeny,
+                       ~1|obs_id),
+                     R = list(phylogeny = cor_tree),
+                     data = dat_all)
+summary(mod_all)
+i2_ml(mod_all)
+
+orchard_plot(mod_all,xlab = "lnRR (all)", group = "species", g = FALSE)
+
+# sex
+
+mod_all1 <- rma.mv(yi, V = vi,
+                   mod = ~ sex,
+                  random = list(
+                    ~1|species,
+                    ~1|phylogeny,
+                    ~1|obs_id),
+                  R = list(phylogeny = cor_tree),
+                  data = dat_all)
+summary(mod_all1)
+
+orchard_plot(mod_all1, mod = "sex",
+             xlab = "lnRR (all)", group = "species", g = FALSE)
+
+# types
+
+mod_all2 <- rma.mv(yi, V = vi,
+                   mod = ~ type-1,
+                   random = list(
+                     ~1|species,
+                     ~1|phylogeny,
+                     ~1|obs_id),
+                   R = list(phylogeny = cor_tree),
+                   data = dat_all)
+summary(mod_all2)
+
+orchard_plot(mod_all2, mod = "type",
+             xlab = "lnRR (all)", group = "species", g = FALSE, angle = 90)
+
+# interaction
+
+mod_all3 <- rma.mv(yi, V = vi,
+                   mod = ~ sex_type-1,
+                   random = list(
+                     ~1|species,
+                     ~1|phylogeny,
+                     ~1|obs_id),
+                   R = list(phylogeny = cor_tree),
+                   data = dat_all)
+summary(mod_all3)
+
+orchard_plot(mod_all3, mod = "sex_type",
+             xlab = "lnRR (all)", group = "species", g = FALSE, angle =45)
+
+#########
+
+# there is an outliner
+# ring-talied possioms
+dat_all[which(dat_all$yi == max(dat_all$yi)), "species"]
+#[1] "Pseudocheirus peregrinus"
+
+# extra
+
+dat_all$yi[dat_all$species == "Pseudocheirus peregrinus"]
+
+
+# exclusing outlier
+
+dat_all2 <- dat_all[-which(dat_all$yi == max(dat_all$yi)), ]
+
+mod_all2 <- rma.mv(yi, V = vi, 
+                      random = list(
+                        ~1|species,
+                        ~1|phylogeny,
+                        ~1|obs_id),
+                      R = list(phylogeny = cor_tree),
+                      data = dat_all2)
+summary(mod_all2)
+i2_ml(mod_all2)
+
+orchard_plot(mod_all2, xlab = "lnRR (all)", group = "species",  g = FALSE)
 
 
 ###################################
@@ -270,7 +443,10 @@ dat2_m_surg <- dat2 %>% filter(is.na(Male_Surgical_Mean) == FALSE) %>%
   mutate(yi = Male_Surgical_Mean ,
          vi = Male_Surgical_SE^2,
          species = species,
-         phylogeny = gsub(" ","_", species))
+         phylogeny = gsub(" ","_", species),
+         sex = "male",
+         type = "surgical")
+
 
 matched <- match((dat2_m_surg$phylogeny), colnames(cor_tree))
 
@@ -281,8 +457,8 @@ dat2_m_surg$phylogeny[18] <- "Bubalus_arnee"
 dat2_m_surg$phylogeny[31] <- "Cervus_elaphus"
 dat2_m_surg$phylogeny[45] <- "Equus_africanus"
 # meta-analysis
-dat2_f_horm$phylogeny[3] <- "Aonyx_cinerea"
-dat2_f_horm$phylogeny[14] <- "Cervus_elaphus"
+#dat2_f_horm$phylogeny[3] <- "Aonyx_cinerea"
+#dat2_f_horm$phylogeny[14] <- "Cervus_elaphus"
 
 
 hist(dat2_m_surg$yi)
@@ -309,7 +485,10 @@ dat2_f_horm <- dat2 %>% filter(is.na(Female_Hormonal_Mean) == FALSE) %>%
   mutate(yi = Female_Hormonal_Mean ,
          vi = Female_Hormonal_SE^2,
          species = species,
-         phylogeny = gsub(" ","_", species))
+         phylogeny = gsub(" ","_", species),
+         sex = "female",
+         type = "hormonal")
+
 
 matched <- match((dat2_f_horm$phylogeny), colnames(cor_tree))
 
@@ -339,7 +518,9 @@ dat2_f_surg<- dat2 %>% filter(is.na(Female_Surgical_Mean) == FALSE) %>%
   mutate(yi = Female_Surgical_Mean ,
          vi = Female_Surgical_SE^2,
          species = species,
-         phylogeny = gsub(" ","_", species))
+         phylogeny = gsub(" ","_", species),
+         sex = "female",
+         type = "surgical")
 
 hist(dat2_f_surg$yi)
 
@@ -353,3 +534,81 @@ summary(mod2_f_surg)
 i2_ml(mod2_f_surg)
 
 orchard_plot(mod2_f_surg, xlab = "lnHR (female surgical)", group = "species", g = FALSE)
+
+##########
+# all data 
+###########
+
+# M horm
+
+dat2_m_horm <- dat2 %>% filter(is.na(Male_Hormonal_Mean) == FALSE) %>% 
+  mutate(yi = Male_Hormonal_Mean ,
+         vi = Male_Hormonal_SE^2,
+         species = species,
+         phylogeny = gsub(" ","_", species),
+         sex = "male",
+         type = "surgical")
+
+
+matched <- match((dat2_m_horm$phylogeny), colnames(cor_tree))
+
+which(is.na(matched))
+
+dim(dat2_m_horm)
+
+dat2_m_horm$phylogeny[1] <- "Aonyx_cinerea"
+
+# M immu
+dat2_m_immu <- dat2 %>% filter(is.na(Male_Immunological_Mean) == FALSE) %>% 
+  mutate(yi = Male_Immunological_Mean ,
+         vi = Male_Immunological_SE^2,
+         species = species,
+         phylogeny = gsub(" ","_", species),
+         sex = "male",
+         type = "surgical")
+
+dim(dat2_m_immu)
+
+# F immu
+
+#####
+dat_f_immu <- dat %>% filter(is.na(Female_Immunological_Mean) == FALSE, 
+                             is.na(Female_None_Mean) == FALSE) %>%
+  mutate(F_control_m = Female_None_Mean,
+         F_control_sd = sqrt(Female.None)*Female_None_SE,
+         F_control_n = Female.None,
+         F_immunol_m = Female_Immunological_Mean,
+         F_immunol_sd = sqrt(Female.Immunological)*Female_Immunological_SE,
+         F_immunol_n = Female.Immunological,
+         species = species,
+         phylogeny = gsub(" ","_", species),
+         sex = "female",
+         type = "immunological")
+
+dat_f_immu <- escalc("ROM", 
+                     m1i = F_immunol_m,
+                     m2i = F_control_m,
+                     sd1i = F_immunol_sd,
+                     sd2i = F_control_sd,
+                     n1i = F_immunol_n,
+                     n2i = F_control_n,
+                     data = dat_f_immu,
+)
+
+dim(dat_f_immu)
+
+
+######
+
+rbind(
+  dat2_m_horm[ , c(1, 58:62)], # 1
+  dat2_m_surg[ , c(1, 58:62)], # 2
+  dat2_f_horm[ , c(1, 58:62)], # 3 
+  dat2_f_surg[ , c(1, 58:62)], # 4
+  dat2_m_immu[ , c(1, 58:62)], # 5
+  dat2_f_immu[ , c(1, 58:62)] # 6
+) -> dat_all
+
+dim(dat_all)
+
+
