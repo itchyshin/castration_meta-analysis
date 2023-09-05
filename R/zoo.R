@@ -565,50 +565,115 @@ dat2_m_immu <- dat2 %>% filter(is.na(Male_Immunological_Mean) == FALSE) %>%
          species = species,
          phylogeny = gsub(" ","_", species),
          sex = "male",
-         type = "surgical")
+         type = "immunological")
 
 dim(dat2_m_immu)
 
 # F immu
-
-#####
-dat_f_immu <- dat %>% filter(is.na(Female_Immunological_Mean) == FALSE, 
-                             is.na(Female_None_Mean) == FALSE) %>%
-  mutate(F_control_m = Female_None_Mean,
-         F_control_sd = sqrt(Female.None)*Female_None_SE,
-         F_control_n = Female.None,
-         F_immunol_m = Female_Immunological_Mean,
-         F_immunol_sd = sqrt(Female.Immunological)*Female_Immunological_SE,
-         F_immunol_n = Female.Immunological,
+dat2_f_immu <- dat2 %>% filter(is.na(Female_Immunological_Mean) == FALSE) %>% 
+  mutate(yi = Female_Immunological_Mean ,
+         vi = Female_Immunological_SE^2,
          species = species,
          phylogeny = gsub(" ","_", species),
          sex = "female",
          type = "immunological")
 
-dat_f_immu <- escalc("ROM", 
-                     m1i = F_immunol_m,
-                     m2i = F_control_m,
-                     sd1i = F_immunol_sd,
-                     sd2i = F_control_sd,
-                     n1i = F_immunol_n,
-                     n2i = F_control_n,
-                     data = dat_f_immu,
-)
-
-dim(dat_f_immu)
+dim(dat2_f_immu)
 
 
+#####
 ######
 
 rbind(
-  dat2_m_horm[ , c(1, 58:62)], # 1
-  dat2_m_surg[ , c(1, 58:62)], # 2
-  dat2_f_horm[ , c(1, 58:62)], # 3 
-  dat2_f_surg[ , c(1, 58:62)], # 4
-  dat2_m_immu[ , c(1, 58:62)], # 5
-  dat2_f_immu[ , c(1, 58:62)] # 6
-) -> dat_all
+  dat2_m_horm[ , c(1, 34:38)], # 1
+  dat2_m_surg[ , c(1, 34:38)], # 2
+  dat2_f_horm[ , c(1, 34:38)], # 3 
+  dat2_f_surg[ , c(1, 34:38)], # 4
+  dat2_m_immu[ , c(1, 34:38)], # 5
+  dat2_f_immu[ , c(1, 34:38)] # 6
+) -> dat2_all
 
-dim(dat_all)
+dim(dat2_all)
+
+# analysis
+
+dat2_all$obs_id <- factor(1:nrow(dat2_all))
+
+dat2_all %>% mutate(sex_type = paste(sex, type, sep = "_")) -> dat2_all
+
+mod2_all <- rma.mv(yi, V = vi,
+                  random = list(
+                    ~1|species,
+                    ~1|phylogeny,
+                    ~1|obs_id),
+                  R = list(phylogeny = cor_tree),
+                  data = dat2_all)
+summary(mod2_all)
+i2_ml(mod2_all)
+
+orchard_plot(mod2_all,xlab = "lnHR (all)", group = "species", g = FALSE)
+
+# sex
+
+mod2_all1 <- rma.mv(yi, V = vi,
+                   mod = ~ sex,
+                   random = list(
+                     ~1|species,
+                     ~1|phylogeny,
+                     ~1|obs_id),
+                   R = list(phylogeny = cor_tree),
+                   data = dat2_all)
+summary(mod2_all1)
+
+orchard_plot(mod2_all1, mod = "sex",
+             xlab = "lnRR (all)", group = "species", g = FALSE)
+
+# types
+
+mod2_all2 <- rma.mv(yi, V = vi,
+                   mod = ~ type-1,
+                   random = list(
+                     ~1|species,
+                     ~1|phylogeny,
+                     ~1|obs_id),
+                   R = list(phylogeny = cor_tree),
+                   data = dat2_all)
+summary(mod2_all2)
+
+orchard_plot(mod2_all2, mod = "type",
+             xlab = "lnRR (all)", group = "species", g = FALSE, angle = 90)
+
+# interaction
+
+mod2_all3 <- rma.mv(yi, V = vi,
+                   mod = ~ sex_type-1,
+                   random = list(
+                     ~1|species,
+                     ~1|phylogeny,
+                     ~1|obs_id),
+                   R = list(phylogeny = cor_tree),
+                   data = dat2_all)
+summary(mod2_all3)
+
+orchard_plot(mod2_all3, mod = "sex_type",
+             xlab = "lnRR (all)", group = "species", g = FALSE, angle =45)
 
 
+# looking correlation between lifespan and risk of death 
+
+tib1 <- tibble(lifespan = dat_all$yi, risk = dat2_all$yi)
+
+ggplot(data = tib1, aes(y = lifespan, x = risk)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = lm)
+
+
+# TODO Fig 1
+
+###################################
+###################################
+
+
+
+
+# TODO Fig 5
