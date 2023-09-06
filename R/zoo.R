@@ -27,15 +27,18 @@ pacman::p_load(tidyverse,
 
 dat <- read_csv(here("data", "zoo.csv"), na = c("", "NA"))
 
-glimpse(dat)
-names(dat)
+#glimpse(dat)
+#names(dat)
+
+dim(dat)
 
 # getting a tree
 
 #dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
-tree <- read.tree(here("data/tree_zoo.tre"))
+#tree <- read.tree(here("data/tree_zoo.tre"))
+tree <- read.tree(here("data/tree_zoo2.tre"))
 
-tree <- compute.brlen(tree)
+#tree <- compute.brlen(tree)
 cor_tree <- vcv(tree, corr = TRUE)
 
 # extra
@@ -53,12 +56,27 @@ setdiff(gsub(" ","_", dat$species), tree$tip.label)
 setdiff(tree$tip.label, gsub(" ","_", dat$species))
 # "Bubalus_arnee"   "Equus_africanus" "Aonyx_cinerea"  
 
+# what to change for spp
+
+# Aonyx_cinereus -> Aonyx_cinerea
+# Bubalus_bubalis -> Bubalus_arnee
+# Equus_asinus -> Equus_africanus
+
 #setdiff(tree$tip.label, unique(dat_all$phylogeny))
 # [1] "Chrysocyon_brachyurus" - maned wolf
 # "Crocuta_crocuta" - spotted hyena
 # "Panthera_uncia" - snow lepard
 # "Neofelis_nebulosa" - 
 
+# creating spp
+
+dat$spp <- dat$species
+
+dat$spp[dat$spp == "Aonyx cinereus"] <- "Aonyx cinerea"
+dat$spp[dat$spp == "Bubalus bubalis"] <- "Bubalus arnee"
+dat$spp[dat$spp == "Equus asinus"] <- "Equus_africanus"
+
+dim(dat)
 
 # filtering and getting SD
 
@@ -74,6 +92,7 @@ dat_m_surg <- dat %>% filter(is.na(Male_Surgical_Mean) == FALSE, is.na(Male_None
          M_surgical_sd = sqrt(Male.Surgical)*Male_Surgical_SE,
          M_surgical_n = Male.Surgical,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "male",
          type = "surgical")
@@ -100,7 +119,7 @@ which(is.na(matched))
 
 dat_m_surg$phylogeny[8] <- "Aonyx_cinerea"
 dat_m_surg$phylogeny[18] <- "Bubalus_arnee"
-dat_m_surg$phylogeny[31] <- "Cervus_elaphus"
+#dat_m_surg$phylogeny[31] <- "Cervus_elaphus"
 dat_m_surg$phylogeny[45] <- "Equus_africanus"
 # meta-analysis
 #dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
@@ -151,6 +170,7 @@ dat_f_horm <- dat %>% filter(is.na(Female_Hormonal_Mean) == FALSE, is.na(Female_
          F_hormonal_sd = sqrt(Female.Hormonal)*Female_Hormonal_SE,
          F_hormonal_n = Female.Hormonal,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "female",
          type = "hormonal")
@@ -174,7 +194,7 @@ which(is.na(matched))
 
 # # meta-analysis
 dat_f_horm$phylogeny[3] <- "Aonyx_cinerea"
-dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
+#dat_f_horm$phylogeny[14] <- "Cervus_elaphus"
 
 mod_f_horm <- rma.mv(yi, V = vi, 
                      random = list(
@@ -199,6 +219,7 @@ dat_f_surg<- dat %>% filter(is.na(Female_Surgical_Mean) == FALSE, is.na(Female_N
          F_surgical_sd = sqrt(Female.Surgical)*Female_Surgical_SE,
          F_surgical_n = Female.Surgical,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "female",
          type = "surgical")
@@ -249,6 +270,7 @@ dat_m_horm <- dat %>% filter(is.na(Male_Hormonal_Mean) == FALSE, is.na(Male_None
          M_hormonal_sd = sqrt(Male.Hormonal)*Male_Hormonal_SE,
          M_hormonal_n = Male.Hormonal,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "male",
          type = "hormonal")
@@ -281,6 +303,7 @@ dat_m_immu <- dat %>% filter(is.na(Male_Immunological_Mean) == FALSE,
          M_immunol_sd = sqrt(Male.Immunological)*Male_Immunological_SE,
          M_immunol_n = Male.Immunological,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "male",
          type = "immunological")
@@ -311,6 +334,7 @@ dat_f_immu <- dat %>% filter(is.na(Female_Immunological_Mean) == FALSE,
          F_immunol_sd = sqrt(Female.Immunological)*Female_Immunological_SE,
          F_immunol_n = Female.Immunological,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "female",
          type = "immunological")
@@ -333,12 +357,12 @@ matched <- match((dat_f_immu$phylogeny), colnames(cor_tree))
 which(is.na(matched))
 
 rbind(
-dat_m_horm[ , c(1, 58:62)], # 1
-dat_m_surg[ , c(1, 58:62)], # 2
-dat_f_horm[ , c(1, 58:62)], # 3 
-dat_f_surg[ , c(1, 58:62)], # 4
-dat_m_immu[ , c(1, 58:62)], # 5
-dat_f_immu[ , c(1, 58:62)] # 6
+dat_m_horm[ , c(1, 59:64)], # 1
+dat_m_surg[ , c(1, 59:64)], # 2
+dat_f_horm[ , c(1, 59:64)], # 3 
+dat_f_surg[ , c(1, 59:64)], # 4
+dat_m_immu[ , c(1, 59:64)], # 5
+dat_f_immu[ , c(1, 59:64)] # 6
 ) -> dat_all
 
 dim(dat_all)
@@ -348,7 +372,7 @@ matched <- match((dat_all$phylogeny), colnames(cor_tree))
 
 which(is.na(matched))
 
-dat_all$phylogeny[1] <- "Aonyx_cinerea"
+#dat_all$phylogeny[1] <- "Aonyx_cinerea"
 
 dat_all$obs_id <- factor(1:nrow(dat_all))
 
@@ -358,13 +382,17 @@ dat_all <- dat_all %>% filter(!species == "Pseudocheirus peregrinus")
 
 setdiff(tree$tip.label, unique(dat_all$phylogeny))
 
+
 #setdiff(tree$tip.label, unique(dat_all$phylogeny))
 # [1] "Chrysocyon_brachyurus" - maned wolf
 # "Crocuta_crocuta" - spotted hyena
 # "Panthera_uncia" - snow lepard
-# "Neofelis_nebulosa" - 
+# "Neofelis_nebulosa" - clouded leopard
+# "Pseudocheirus_peregrinus" - posumm
 
 # saving data_all
+
+dat_all %>% mutate(effect = "lifespan") -> dat_all
 
 saveRDS(dat_all, here("Rdata", "lifespan_all.RDS"))
 
@@ -469,6 +497,18 @@ dat2 <- read.csv(here("data", "gammaBaSTA.csv"))
 glimpse(dat2)
 names(dat2)
 
+# creating spp
+
+dat2$spp <- dat$species
+
+dat2$spp[dat$spp == "Aonyx cinereus"] <- "Aonyx cinerea"
+dat2$spp[dat$spp == "Bubalus bubalis"] <- "Bubalus arnee"
+dat2$spp[dat$spp == "Equus asinus"] <- "Equus_africanus"
+
+dim(dat2)
+
+
+
 # filtering and getting SD
 
 ################
@@ -479,6 +519,7 @@ dat2_m_surg <- dat2 %>% filter(is.na(Male_Surgical_Mean) == FALSE) %>%
   mutate(yi = Male_Surgical_Mean ,
          vi = Male_Surgical_SE^2,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "male",
          type = "surgical")
@@ -490,7 +531,7 @@ which(is.na(matched))
 
 dat2_m_surg$phylogeny[8] <- "Aonyx_cinerea"
 dat2_m_surg$phylogeny[18] <- "Bubalus_arnee"
-dat2_m_surg$phylogeny[31] <- "Cervus_elaphus"
+#dat2_m_surg$phylogeny[31] <- "Cervus_elaphus"
 dat2_m_surg$phylogeny[45] <- "Equus_africanus"
 # meta-analysis
 #dat2_f_horm$phylogeny[3] <- "Aonyx_cinerea"
@@ -521,6 +562,7 @@ dat2_f_horm <- dat2 %>% filter(is.na(Female_Hormonal_Mean) == FALSE) %>%
   mutate(yi = Female_Hormonal_Mean ,
          vi = Female_Hormonal_SE^2,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "female",
          type = "hormonal")
@@ -532,7 +574,7 @@ which(is.na(matched))
 
 # meta-analysis
 dat2_f_horm$phylogeny[3] <- "Aonyx_cinerea"
-dat2_f_horm$phylogeny[14] <- "Cervus_elaphus"
+#dat2_f_horm$phylogeny[14] <- "Cervus_elaphus"
 
 hist(dat2_f_horm$yi)
 
@@ -554,6 +596,7 @@ dat2_f_surg<- dat2 %>% filter(is.na(Female_Surgical_Mean) == FALSE) %>%
   mutate(yi = Female_Surgical_Mean ,
          vi = Female_Surgical_SE^2,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "female",
          type = "surgical")
@@ -581,6 +624,7 @@ dat2_m_horm <- dat2 %>% filter(is.na(Male_Hormonal_Mean) == FALSE) %>%
   mutate(yi = Male_Hormonal_Mean ,
          vi = Male_Hormonal_SE^2,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "male",
          type = "surgical")
@@ -599,6 +643,7 @@ dat2_m_immu <- dat2 %>% filter(is.na(Male_Immunological_Mean) == FALSE) %>%
   mutate(yi = Male_Immunological_Mean ,
          vi = Male_Immunological_SE^2,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "male",
          type = "immunological")
@@ -610,6 +655,7 @@ dat2_f_immu <- dat2 %>% filter(is.na(Female_Immunological_Mean) == FALSE) %>%
   mutate(yi = Female_Immunological_Mean ,
          vi = Female_Immunological_SE^2,
          species = species,
+         species_tree = spp,
          phylogeny = gsub(" ","_", species),
          sex = "female",
          type = "immunological")
@@ -621,12 +667,12 @@ dim(dat2_f_immu)
 ######
 
 rbind(
-  dat2_m_horm[ , c(1, 34:38)], # 1
-  dat2_m_surg[ , c(1, 34:38)], # 2
-  dat2_f_horm[ , c(1, 34:38)], # 3 
-  dat2_f_surg[ , c(1, 34:38)], # 4
-  dat2_m_immu[ , c(1, 34:38)], # 5
-  dat2_f_immu[ , c(1, 34:38)]  # 6
+  dat2_m_horm[ , c(1, 35:40)], # 1
+  dat2_m_surg[ , c(1, 35:40)], # 2
+  dat2_f_horm[ , c(1, 35:40)], # 3 
+  dat2_f_surg[ , c(1, 35:40)], # 4
+  dat2_m_immu[ , c(1, 35:40)], # 5
+  dat2_f_immu[ , c(1, 35:40)]  # 6
 ) -> dat2_all
 
 dim(dat2_all)
@@ -637,6 +683,13 @@ dat2_all$obs_id <- factor(1:nrow(dat2_all))
 
 dat2_all %>% mutate(sex_type = paste(sex, type, sep = "_")) -> dat2_all
 
+
+dat2_all <- dat2_all %>% filter(!species == "Pseudocheirus peregrinus")
+
+dat2_all %>% select("species", "species_tree", "phylogeny",
+                    "sex", "type", "yi", "vi", "obs_id", "sex_type") -> dat2_all
+
+dat2_all %>% mutate(effect = "risk") -> dat2_all
 
 # saving data_all
 
