@@ -1,6 +1,6 @@
 ---
-title: "Supporting Information: Male castration and female sterilization improve survival but do not explain sex-differences in vertebrate ageing"
-subtitle: "Michael Garratt, Christine Neyt, Michael Stout, José V. V. Isola, Jean-Michel Gaillard, Jean-François Lemaître, Malgorzata Lagisz, & Shinichi Nakagawa" 
+title: "Castration, sterlization and con"
+subtitle: "Michael Garratt, Christine Neyt, Michael Stout, José V. V. Isola, Jean-Michel Gaillard, Jean-François Lemaître, Malgorzata Lagisz, Johanna Stärk, (more people to add here) Fernando Colchero & Shinichi Nakagawa" 
 #authors: 
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 

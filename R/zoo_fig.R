@@ -34,6 +34,12 @@ cor_tree <- vcv(tree, corr = TRUE)
 
 lifespan <- readRDS(here("Rdata", "lifespan_all.RDS"))
 
+#############################
+# first creating data to plot 
+#############################
+
+
+
 
 p <-
   ggtree(
