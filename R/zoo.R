@@ -382,7 +382,12 @@ dat_all <- dat_all %>% filter(!species == "Pseudocheirus peregrinus")
 
 setdiff(tree$tip.label, unique(dat_all$phylogeny))
 
+to_drop <-
+  tree$tip.label[which(!(tree$tip.label %in% unique(dat_all$phylogeny)))]
 
+tree3 <- drop.tip(tree, to_drop)
+
+write.tree(tree3, here("data", "tree_zoo3.tre"))
 #setdiff(tree$tip.label, unique(dat_all$phylogeny))
 # [1] "Chrysocyon_brachyurus" - maned wolf
 # "Crocuta_crocuta" - spotted hyena
