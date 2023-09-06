@@ -27,9 +27,38 @@ pacman::p_load(tidyverse,
 
 dat <- read_csv(here("data", "zoo.csv"), na = c("", "NA"))
 
-
 glimpse(dat)
 names(dat)
+
+# getting a tree
+
+#dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
+tree <- read.tree(here("data/tree_zoo.tre"))
+
+tree <- compute.brlen(tree)
+cor_tree <- vcv(tree, corr = TRUE)
+
+# extra
+tax <- read.csv(here("data", "vertlife_taxonomy_translation_table.csv"))
+
+setdiff( dat$species, tax$vertlife.species)
+setdiff(tree$tip.label, gsub(" ","_", tax$vertlife.species))
+match(tree$tip.label, gsub(" ","_", tax$vertlife.species))
+
+# checking naming consistency between 
+length(unique(dat$species))
+setdiff(gsub(" ","_", dat$species), tree$tip.label)
+#  "Aonyx_cinereus"    "Bubalus_bubalis"   "Cervus_canadensis" "Equus_asinus" 
+
+setdiff(tree$tip.label, gsub(" ","_", dat$species))
+# "Bubalus_arnee"   "Equus_africanus" "Aonyx_cinerea"  
+
+#setdiff(tree$tip.label, unique(dat_all$phylogeny))
+# [1] "Chrysocyon_brachyurus" - maned wolf
+# "Crocuta_crocuta" - spotted hyena
+# "Panthera_uncia" - snow lepard
+# "Neofelis_nebulosa" - 
+
 
 # filtering and getting SD
 
@@ -61,14 +90,6 @@ dat_m_surg <- escalc("ROM",
               n2i = M_control_n,
               data = dat_m_surg,
               )
-
-# getting a tree
-
-#dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
-tree <- read.tree(here("data/tree_zoo.tre"))
-
-tree <- compute.brlen(tree)
-cor_tree <- vcv(tree, corr = TRUE)
 
 # checking the match
 matched <- match((dat_m_surg$phylogeny), colnames(cor_tree))
@@ -333,6 +354,21 @@ dat_all$obs_id <- factor(1:nrow(dat_all))
 
 dat_all %>% mutate(sex_type = paste(sex, type, sep = "_")) -> dat_all
 
+dat_all <- dat_all %>% filter(!species == "Pseudocheirus peregrinus")
+
+setdiff(tree$tip.label, unique(dat_all$phylogeny))
+
+#setdiff(tree$tip.label, unique(dat_all$phylogeny))
+# [1] "Chrysocyon_brachyurus" - maned wolf
+# "Crocuta_crocuta" - spotted hyena
+# "Panthera_uncia" - snow lepard
+# "Neofelis_nebulosa" - 
+
+# saving data_all
+
+saveRDS(dat_all, here("Rdata", "lifespan_all.RDS"))
+
+
 mod_all <- rma.mv(yi, V = vi,
                      random = list(
                        ~1|species,
@@ -590,7 +626,7 @@ rbind(
   dat2_f_horm[ , c(1, 34:38)], # 3 
   dat2_f_surg[ , c(1, 34:38)], # 4
   dat2_m_immu[ , c(1, 34:38)], # 5
-  dat2_f_immu[ , c(1, 34:38)] # 6
+  dat2_f_immu[ , c(1, 34:38)]  # 6
 ) -> dat2_all
 
 dim(dat2_all)
@@ -600,6 +636,11 @@ dim(dat2_all)
 dat2_all$obs_id <- factor(1:nrow(dat2_all))
 
 dat2_all %>% mutate(sex_type = paste(sex, type, sep = "_")) -> dat2_all
+
+
+# saving data_all
+
+saveRDS(dat2_all, here("Rdata", "risk_all.RDS"))
 
 mod2_all <- rma.mv(yi, V = vi,
                   random = list(

@@ -17,7 +17,6 @@ library(here)
 library(patchwork)
 
 
-
 dat <- read_csv(here("data", "zoo.csv"), na = c("", "NA"))
 
 tax <- read.csv(here("data", "vertlife_taxonomy_translation_table.csv"))
@@ -33,6 +32,7 @@ cor_tree <- vcv(tree, corr = TRUE)
 
 # getting relevant data
 
+lifespan <- readRDS(here("Rdata", "lifespan_all.RDS"))
 
 
 p <-
