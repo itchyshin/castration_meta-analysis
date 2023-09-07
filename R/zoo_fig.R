@@ -24,22 +24,55 @@ tax <- read.csv(here("data", "vertlife_taxonomy_translation_table.csv"))
 glimpse(dat)
 names(dat)
 
-#dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
-tree <- read.tree(here("data/tree_zoo.tre"))
+# getting relevant data
+lifespan <- readRDS(here("Rdata", "lifespan_all.RDS"))
 
-tree <- compute.brlen(tree)
+#lifespan_m <- lifespan %>% filter(sex == "male")
+#lifespan_f
+
+#dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
+# tree <- read.tree(here("data/tree_zoo4.tre"))
+# 
+# fortify(tree)
+# # triming tree
+# 
+# to_drop <-
+#   tree$tip.label[which(!(tree$tip.label %in% unique(lifespan$phylogeny)))]
+# 
+# tree <- drop.tip(tree, to_drop)
+# 
+# # this works
+# fortify(tree)
+
+write.tree(tree, here("data", "tree_zoo_all.tre"))
+
+
+tree <- read.tree( here("data", "tree_zoo_all.tre"))
+
+fortify(tree)
+
+#tree <- compute.brlen(tree)
 cor_tree <- vcv(tree, corr = TRUE)
 
-# getting relevant data
 
-lifespan <- readRDS(here("Rdata", "lifespan_all.RDS"))
+# testing matching
+
+match(dat$species, lifespan$species)
+match(tree$tip.label, lifespan$phylogeny)
+
+# manipulating tree
+
+tdat <- fortify(tree)
+tdat2 <- subset(tdat, isTip)
+ordered <- tdat2$label[order(tdat2$y, decreasing=TRUE)]
 
 #############################
 # first creating data to plot 
 #############################
 
-
-
+pdat <- dat %>% select(
+  
+)
 
 p <-
   ggtree(
@@ -909,8 +942,3 @@ p4 <- facet_widths(p3, c(Tree=0.7,`N observations`=0.2,`Estimates of mean ratio 
 png(filename = "Figure S7 (Phy est).png", width = 8, height = 6, units = "in", type = "windows", res = 400)
 p4
 dev.off()
-
-
-
-
-
