@@ -766,13 +766,24 @@ ggplot(data = tib1, aes(y = lifespan, x = risk)) +
   geom_point() + 
   geom_smooth(se = FALSE, method = lm)
 
-
-# TODO Fig 1
-
-###################################
-###################################
+#>>>>>>>>>>>>>>>>>>>>>>>>>
+#  absolute-value analysis
+#<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
 
 
-# TODO Fig 5
+
+
+
+
+
+
+
+
+
+
+
+
+
+

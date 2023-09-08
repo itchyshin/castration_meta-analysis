@@ -27,9 +27,11 @@ tidy = TRUE
 rm(list=ls())
 ```
 
-# Setting-ups {.tabset .tabset-pills .tabset-fade}
+# Litearture-based data (Meta-analysis)
 
-## Loading packages
+## Setting-ups {.tabset .tabset-pills .tabset-fade}
+
+### Loading packages
 
 ```{r}
 # packages ####
@@ -83,7 +85,7 @@ library(groundhog)
 eval(metafor:::.MuMIn)
 ```
 
-## Loading custom functions
+### Loading custom functions
 
 ```{r}
 # custom functions 
@@ -145,9 +147,9 @@ folded_v <-function(mean, variance){
 
 ```
 
-# Data preparation & processing {.tabset .tabset-pills .tabset-fade}
+## Data preparation & processing {.tabset .tabset-pills .tabset-fade}
 
-## Main data
+### Main data
 
 ```{r}
 #dat_full <- read_csv(here("data", "dat_07072021.csv"), na = c("", "NA")) 
@@ -186,7 +188,7 @@ kable(dat, "html") %>%
     height = "250px")
 ```
 
-## Calculating effect size for the main data
+### Calculating effect size for the main data
 
 ```{r}
 # let's get CVs
@@ -256,7 +258,7 @@ dat_long %>% filter(!is.na(yi), !is.na(vi)) -> dat_long
 dim(dat_long)
 ```
 
-## Rodent data
+### Rodent data
 
 This data is a subset of the main data only including data from rodents. This is used to test the effect of sterilization/castration on life stage (for these species, we were able to get more fine scale data). This dataset has two more variables: 1) Age_at_treatment (age in days when treatment was applied) and 2) Day_to_maturity (age in days when animals become mature). As also mentioned below, the analyses associated with this data set is post-hoc (not planned before data collection).
 
@@ -291,7 +293,7 @@ kable(rdat, "html") %>%
     height = "250px")
 ```
 
-## Calculating effect size for the rodent data
+### Calculating effect size for the rodent data
 
 ```{r}
 # let's get CVs
@@ -311,7 +313,7 @@ str(rdat)
 
 This dataset is a part of the full data and only has data from rodent species. 
 
-## All-combination data
+### All-combination data
 
 This data sets is a subset of the main data and this includes only study which has all 4 groups: 1) control females, 2) control males, 3) treated females and 4) treated males.
 
@@ -334,7 +336,7 @@ kable(sdat, "html") %>%
 ```
 
 
-## Calculating effect size for the matching data
+### Calculating effect size for the matching data
 
 ```{r}
 # we create a longer data format
@@ -383,7 +385,7 @@ sdat_long$Comp_type <- as.factor(rep(c("both_normal", "both_castrated"), each = 
 
 ```
 
-## Meta-data
+### Meta-data
 
 ```{r}
 #sdat <- read_csv(here("data", "data2_15022022.csv"), na = c("", "NA")) 
@@ -396,9 +398,9 @@ kable(mdat, "html") %>%
     height = "250px")
 ```
 
-# Summarise the dataset {.tabset .tabset-pills .tabset-fade} 
+## Summarise the dataset {.tabset .tabset-pills .tabset-fade} 
 
-## Visualising missing data
+### Visualising missing data
 
 ```{r missing data, echo = FALSE}
 #vis_miss(dat) #mostly data is missing at comment fields
@@ -410,7 +412,7 @@ vis_miss(dat) +
 ```
 
 
-## General summary   
+### General summary   
 
  - Number of effect sizes: `r length(unique(dat$Effect_ID))`   
  - Number of studies: `r length(unique(dat$Study))`   
@@ -458,7 +460,7 @@ table(dat$Controlled_treatments, dat$Effect_type)
 table(dat$Maturity_at_treatment_ordinal, dat$Effect_type)
 ```
 
-## Key predictors (moderators)   
+### Key predictors (moderators)   
 
 Visualise missing data in 6 key variables (moderators):   
  - Sex,   
@@ -478,7 +480,7 @@ vis_miss(dat_key) +
   ggtitle("Missing data in key variables") #32% mising values in Maturity_at_treatment_ordinal only
 ```
 
-## Visualize pairwise associations between 6 key variables:   
+### Visualize pairwise associations between 6 key variables:   
 
 ```{r key variables associations, echo = FALSE}
 #names(dat_key)
@@ -491,7 +493,7 @@ plot(GKmatrix)
 
 Alluvial diagrams for key predictor variables (moderators) - two groups of 3 moderators, grouped by similarity:  
 
-## For Sex, Gonads_removed, $ Maturity_at_treatment_ordinal (changed NA to 0)  
+### For Sex, Gonads_removed, $ Maturity_at_treatment_ordinal (changed NA to 0)  
 
 
 ```{r alluvial plots A, results = 'hide'}
@@ -576,7 +578,7 @@ ggplot(data = freq_1,
   ggtitle("A. Subjects sex, manipulation and maturity ")
 ```
 
-## For Wild_or_semi_wild, Controlled_treatments, & Effect_type (Outcome type)
+### For Wild_or_semi_wild, Controlled_treatments, & Effect_type (Outcome type)
 
 ```{r alluvial plots B, results = 'hide'}
 # create a frequency table for next 3 moderator variables
@@ -603,7 +605,7 @@ ggplot(data = freq_2,
 ```
 
 
-## For Gonads_removed, Wild_or_semi_wild, Controlled_treatments, & Effect_type (Outcome type) 
+### For Gonads_removed, Wild_or_semi_wild, Controlled_treatments, & Effect_type (Outcome type) 
 
 ```{r alluvial plots C, results = 'hide'}
 # create a frequency table for next 3 moderator variables
@@ -631,9 +633,9 @@ ggplot(data = freq_3,
 
 This just shows a different combination of predictor variables (moderators) from plots A and B.      
 
-# Building phylogenetic tree {.tabset .tabset-pills .tabset-fade}
+## Building phylogenetic tree {.tabset .tabset-pills .tabset-fade}
 
-## Setting up
+### Setting up
 
 ```{r get species list, message = FALSE, echo = TRUE, eval = FALSE, warning = FALSE}
 names(dat)
@@ -652,14 +654,14 @@ table(taxa$approximate_match) #1 approximate match
 taxa[taxa$approximate_match == TRUE, ] ##lamperta fluviatilis (search_string) will be presented as Perca fluviatilis (uniquw_name)
 ```
 
-## Get the initial tree
+### Get the initial tree
 
 ```{r rotl species tree, warning = FALSE, results=FALSE, eval= FALSE, echo = TRUE}
 tree <- tol_induced_subtree(ott_ids = taxa[["ott_id"]], label_format = "name")  
 # plot(tree, cex=.6, label.offset =.1, no.margin = TRUE) visual check
 ```
 
-## Check matching species & labels
+### Check matching species & labels
 
 ```{r re-check tree labels, eval=F, echo=T}
 #check overlap and differences with the taxa list
@@ -687,7 +689,7 @@ write.tree(tree, file=here("data", "tree_rotl.tre")) #save the tree
 # tree$node.label <- NULL #you can delete internal node labels
 ```
 
-## Plot phylogenetic tree
+### Plot phylogenetic tree
 
 ```{r plot phylogenetic tree, fig.width=10, fig.height=20, echo=TRUE, message=FALSE}
 
@@ -701,9 +703,9 @@ plot(tree, cex=.6, label.offset =.1, no.margin = TRUE)
 # dev.off()
 ```
 
-# Meta-analysis: main {.tabset .tabset-pills .tabset-fade}
+## Meta-analysis: main {.tabset .tabset-pills .tabset-fade}
 
-## Main model
+### Main model
 
 ```{r}
 # VCV matrix to model shared control 
@@ -767,7 +769,7 @@ anova(mod, mod2) # they are not significantly different
 
 ```
 
-## Sex-wise species-level effect (Figure 1A)
+### Sex-wise species-level effect (Figure 1A)
 
 ```{r, eval=F, echo=T}
 # creating mod_table- results from the model
@@ -915,9 +917,9 @@ p0
 
 ![](../figs/fig1a.png)
 
-# Meta-regression: non-full models {.tabset .tabset-pills .tabset-fade}
+## Meta-regression: non-full models {.tabset .tabset-pills .tabset-fade}
 
-## Model function
+### Model function
 
 ```{r}
 
@@ -942,7 +944,7 @@ mod_func <-  function(formula) {
 
 ```
 
-## Sex difference (`Sex`)
+### Sex difference (`Sex`)
 
 ```{r}
 mod_sex <- mod_func(formula = ~ Sex-1)
@@ -966,7 +968,7 @@ p1 <- orchard_plot(mod_sex1, mod = "Sex",
 p1
 ```
 
-## Gonad Removal (`Sex_Gonads`)
+### Gonad Removal (`Sex_Gonads`)
 
 ```{r}
 # creating a new variable Sex + Gonad because 
@@ -1001,7 +1003,7 @@ p2 <- orchard_plot(mod_rem, mod = "Sex_Gonads",
 p2
 ```
 
-## Environmental (`Wild_or_semi_wild`)
+### Environmental (`Wild_or_semi_wild`)
 
 ```{r}
 
@@ -1031,7 +1033,7 @@ p3 <- orchard_plot(mod_env1, mod = "Wild_or_semi_wild",
 p3
 ```
 
-## Controlled treatment (`Controlled_treatments`)
+### Controlled treatment (`Controlled_treatments`)
 
 ```{r}
 
@@ -1060,7 +1062,7 @@ p4 <- orchard_plot(mod_con1, mod = "Controlled_treatments",
 p4
 ```
 
-## Sham (`Shamtreatment_moderator`)
+### Sham (`Shamtreatment_moderator`)
 
 ```{r}
 dat$Shamtreatment_moderator <- factor(dat$Shamtreatment_moderator, 
@@ -1088,7 +1090,7 @@ p5 <- orchard_plot(mod_sham, mod = "Shamtreatment_moderator",
 p5
 ```
 
-## Type of effect sizes (`Effect_type`)
+### Type of effect sizes (`Effect_type`)
 
 ```{r}
 dat$Effect_type <- factor(dat$Effect_type, 
@@ -1116,7 +1118,7 @@ p6 <- orchard_plot(mod_eff1, mod = "Effect_type",
 p6
 ```
 
-## Matuarity (`Maturity_at_treatment_ordinal`)
+### Matuarity (`Maturity_at_treatment_ordinal`)
 
 ```{r}
 
@@ -1137,7 +1139,7 @@ p7 <- bubble_plot(mod_mat,
 p7
 ```
 
-## Sex x Matuarity
+### Sex x Matuarity
 
 ```{r}
 # interaction with Sex
@@ -1163,7 +1165,7 @@ p8 <- bubble_plot(mod_sex_mat,
 p8
 ```
 
-## Figure 1
+### Figure 1
 
 ```{r, eval=FALSE}
 
@@ -1173,7 +1175,7 @@ p0/ (p1 | p2) + plot_layout(nrow = 2, heights = c(2.5,1)) + plot_annotation(tag_
 
 ![](../figs/fig1.png)
 
-## Figure 2
+### Figure 2
 
 ```{r, eval=FALSE}
 
@@ -1183,9 +1185,9 @@ p0/ (p1 | p2) + plot_layout(nrow = 2, heights = c(2.5,1)) + plot_annotation(tag_
 
 ![](../figs/fig2.png)
 
-# Meta-regression: full model {.tabset .tabset-pills .tabset-fade}
+## Meta-regression: full model {.tabset .tabset-pills .tabset-fade}
 
-## Full model
+### Full model
 
 ```{r}
 # at least 10 in each group (sex * wild = male wild is too few - 4)
@@ -1195,7 +1197,7 @@ summary(mod_full)
 r2_ml(mod_full)
 ```
 
-## AIC model selection
+### AIC model selection
 
 ```{r, eval = FALSE}
 
@@ -1225,9 +1227,9 @@ summary(avg2) # similar to the orignal resulde
 
 ```
 
-# Publication bais & sensitivity analysis {.tabset .tabset-pills .tabset-fade}
+## Publication bais & sensitivity analysis {.tabset .tabset-pills .tabset-fade}
 
-## Funnel plot
+### Funnel plot
 
 ```{r}
 # raw funnel plot
@@ -1239,7 +1241,7 @@ funnel(best2)
 
 ```
 
-## Small-study effect: uni-moderaotor
+### Small-study effect: uni-moderaotor
 
 ```{r}
 
@@ -1254,7 +1256,7 @@ summary(egger_uni)
 #summary(egger_uni2)
 ```
 
-## Decline effect (time lag bias): uni-moderator
+### Decline effect (time lag bias): uni-moderator
 
 ```{r}
 
@@ -1264,7 +1266,7 @@ decline_uni <- mod_func(formula = ~ Year)
 summary(decline_uni)
 ```
 
-## Mulit-moderator model for both the small-study & decline effects
+### Mulit-moderator model for both the small-study & decline effects
 
 ```{r}
 
@@ -1286,7 +1288,7 @@ res2 <- emmeans(prep1, specs = "1", df = pub_bias$ddf, weights = "prop")
 res2
 ```
 
-## Leave-one-study-out analysis
+### Leave-one-study-out analysis
 
 ```{r, eval = FALSE}
 # The function for leave-one-study-out
@@ -1349,11 +1351,11 @@ leaveoneout_E <- ggplot(MA_LOO) +
 leaveoneout_E
 ```
 
-# Meta-analysis: rodent data only {.tabset .tabset-pills .tabset-fade}
+## Meta-analysis: rodent data only {.tabset .tabset-pills .tabset-fade}
 
 We note that the analyses below using rodent data are post-host analyses. 
 
-## Main model
+### Main model
 
 ```{r}
 # shared control 
@@ -1383,7 +1385,7 @@ orchard_plot(rmod, xlab = "log response ratio (lnRR)", group = "Study")
 
 ```
 
-## Sex difference (`Sex`)
+### Sex difference (`Sex`)
 
 ```{r}
 rmod_sex <-  rma.mv(yi, V = V_matrix, mod = ~ Sex, 
@@ -1407,7 +1409,7 @@ orchard_plot(rmod_sex, mod = "Sex",
              group = "Study")
 ```
 
-## Maturity (in days)
+### Maturity (in days)
 
 ```{r}
 
@@ -1437,9 +1439,9 @@ r2_ml(rmod_mat)
 bubble_plot(rmod_mat, mod = "lnAge_ratio", group = "Study", data = rdat, by = "Sex", xlab = "ln(Treatment Day/Day to sexual maturity) [Rodent data only]", ylab = "ln(Response ratio)")
 ```
 
-# Contrasting sexes: full data {.tabset .tabset-pills .tabset-fade}
+## Contrasting sexes: full data {.tabset .tabset-pills .tabset-fade}
 
-## Calcuating aboslute effect sizes
+### Calcuating aboslute effect sizes
 
 ```{r}
 
@@ -1452,7 +1454,7 @@ sdat_long <- sdat_long %>% mutate(abs_yi = folded_mu(yi, vi),
                       abs_vi = folded_v(yi, vi))
 ```
 
-## Comparing M/F vs. M$\star$/F or M/F$\star$
+### Comparing M/F vs. M$\star$/F or M/F$\star$
 
 ```{r}
 # variance covariance matrix
@@ -1478,7 +1480,7 @@ orchard_plot(mod_comp, mod = "Comp_type", xlab = "log response ratio (lnRR)",
              cb = F)
 ```
 
-## Separating by sex (M/F vs. M$\star$/F or M/F$\star$)
+### Separating by sex (M/F vs. M$\star$/F or M/F$\star$)
 
 ```{r}
 
@@ -1510,7 +1512,7 @@ d0 <- orchard_plot(mod_comp_sex, mod = "Comp_type_Sex1", xlab = "log response ra
 d0
 ```
 
-## Absolute effect size comparaion (M/F or F/M vs. M$\star$/F or F$\star$/M)
+### Absolute effect size comparaion (M/F or F/M vs. M$\star$/F or F$\star$/M)
 
 ```{r}
 
@@ -1539,7 +1541,7 @@ d1 <- orchard_plot(abs_mod_comp_sex, mod = "Comp_type_Sex1", xlab = "absolute lo
 d1
 ```
 
-## Contrasting M/F and M/F$\star$
+### Contrasting M/F and M/F$\star$
 
 ```{r}
 # female
@@ -1601,7 +1603,7 @@ d3 <- orchard_plot(f_mod_long,
 d3
 ```
 
-## Contrasting M/F and M$\star$/F
+### Contrasting M/F and M$\star$/F
 
 ```{r}
 # pair figure male  
@@ -1664,7 +1666,7 @@ scale_x_discrete(labels = "Male sterlized/Female normal vs. \nMale normal/Female
 d5
 ```
 
-## Figure 4
+### Figure 4
 
 ```{r, eval = FALSE}
 patch <- d0 + d1 + plot_layout()
@@ -1674,7 +1676,7 @@ patch +  plot_annotation(tag_levels = "A")
 
 ![](../figs/fig4A.png)
 
-## Figure S1
+### Figure S1
 
 Related figures 
 
@@ -1686,9 +1688,9 @@ patch2 +  plot_annotation(tag_levels = "A")
 
 ![](../figs/fig4B.png)
 
-# Contrasting sexes: all-combination data {.tabset .tabset-pills .tabset-fade}
+## Contrasting sexes: all-combination data {.tabset .tabset-pills .tabset-fade}
 
-## Comparing M/F vs. M$\star$/F$\star$
+### Comparing M/F vs. M$\star$/F$\star$
 
 ```{r}
 
@@ -1740,7 +1742,7 @@ f1 <- orchard_plot(mod_comp2c, mod = "Comp_type",
 f1
 ```
 
-## Absolute effect size comparaion (M/F vs. M$\star$/F$\star$)
+### Absolute effect size comparaion (M/F vs. M$\star$/F$\star$)
 
 ```{r}
 
@@ -1789,7 +1791,7 @@ f2 <- orchard_plot(mod_comp3b, mod = "Comp_type",
 f2
 ```
 
-## Figure 5
+### Figure 5
 
 ```{r, eval = FALSE}
 patch3 <- f1/f2 + plot_layout()
@@ -1798,8 +1800,16 @@ patch3 +  plot_annotation(tag_levels = "A")
 ```
 
 ![](../figs/fig5.png)
+# Zoo data 
 
-# Software and package versions
+## Setting up
+
+
+
+## Meta-analysis
+
+
+## Software and package versions
 
 ```{r}
 sessionInfo() %>% pander()
