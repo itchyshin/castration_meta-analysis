@@ -382,12 +382,12 @@ dat_all <- dat_all %>% filter(!species == "Pseudocheirus peregrinus")
 
 setdiff(tree$tip.label, unique(dat_all$phylogeny))
 
-to_drop <-
-  tree$tip.label[which(!(tree$tip.label %in% unique(dat_all$phylogeny)))]
+#to_drop <-
+#  tree$tip.label[which(!(tree$tip.label %in% unique(dat_all$phylogeny)))]
 
-tree3 <- drop.tip(tree, to_drop)
+#tree3 <- drop.tip(tree, to_drop)
 
-write.tree(tree3, here("data", "tree_zoo3.tre"))
+#write.tree(tree3, here("data", "tree_zoo3.tre"))
 #setdiff(tree$tip.label, unique(dat_all$phylogeny))
 # [1] "Chrysocyon_brachyurus" - maned wolf
 # "Crocuta_crocuta" - spotted hyena
@@ -765,25 +765,3 @@ tib1 <- tibble(lifespan = dat_all$yi, risk = dat2_all$yi)
 ggplot(data = tib1, aes(y = lifespan, x = risk)) + 
   geom_point() + 
   geom_smooth(se = FALSE, method = lm)
-
-#>>>>>>>>>>>>>>>>>>>>>>>>>
-#  absolute-value analysis
-#<<<<<<<<<<<<<<<<<<<<<<<<<
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
