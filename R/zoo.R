@@ -36,7 +36,16 @@ dim(dat)
 
 #dat$Phylogeny <- gsub("Perca_fluviatilis", "Lamperta_fluviatilis", dat$Phylogeny) #replace with the original name
 #tree <- read.tree(here("data/tree_zoo.tre"))
-tree <- read.tree(here("data/tree_zoo2.tre"))
+#tree <- read.tree( here("data", "tree_zoo_all.tre"))
+tree <- read.tree( here("data", "tree_zoo4.tre"))
+
+# life span data 
+#to_drop <-
+#  tree$tip.label[which(!(tree$tip.label %in% unique(lifespan$phylogeny)))]
+
+#tree <- drop.tip(tree, to_drop)
+
+#fortify(tree)
 
 #tree <- compute.brlen(tree)
 cor_tree <- vcv(tree, corr = TRUE)
@@ -75,6 +84,8 @@ dat$spp <- dat$species
 dat$spp[dat$spp == "Aonyx cinereus"] <- "Aonyx cinerea"
 dat$spp[dat$spp == "Bubalus bubalis"] <- "Bubalus arnee"
 dat$spp[dat$spp == "Equus asinus"] <- "Equus_africanus"
+
+dat <- dat %>% filter(species != "Pseudocheirus peregrinus")
 
 dim(dat)
 
@@ -292,6 +303,8 @@ matched <- match((dat_m_horm$phylogeny), colnames(cor_tree))
 
 which(is.na(matched))
 
+dat_m_horm$phylogeny[1] <- "Aonyx_cinerea"
+
 #grep("Equus",colnames(cor_tree))
 
 dat_m_immu <- dat %>% filter(is.na(Male_Immunological_Mean) == FALSE, 
@@ -401,8 +414,14 @@ dat_all %>% mutate(effect = "lifespan") -> dat_all
 
 saveRDS(dat_all, here("Rdata", "lifespan_all.RDS"))
 
+dat_all <- readRDS(here("Rdata", "lifespan_all.RDS"))
 
-mod_all <- rma.mv(yi, V = vi,
+setdiff(unique(dat_all$phylogeny), tree$tip.label)
+
+VCV <- vcalc(vi, species, rho = 0.5, data = dat_all)
+
+
+mod_all <- rma.mv(yi, V = VCV,
                      random = list(
                        ~1|species,
                        ~1|phylogeny,
@@ -411,6 +430,8 @@ mod_all <- rma.mv(yi, V = vi,
                      data = dat_all)
 summary(mod_all)
 i2_ml(mod_all)
+
+robust(mod_all, cluster = species)  
 
 orchard_plot(mod_all,xlab = "lnRR (all)", group = "species", g = FALSE)
 

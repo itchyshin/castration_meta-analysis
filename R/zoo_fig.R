@@ -57,8 +57,14 @@ dat$phylogeny[which(dat$species == "Cervus canadensis")] <-"Cervus_canadensis"
 
 
 dim(dat)
+
+
+
+
 # getting relevant data
 lifespan <- readRDS(here("Rdata", "lifespan_all.RDS"))
+
+
 
 #setdiff(dat_full$species, lifespan$species)
 #########
