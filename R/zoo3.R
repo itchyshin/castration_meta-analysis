@@ -69,22 +69,22 @@ dat_post %>%
 # getting effect size
 
 dat_pre <- escalc("ROM", 
-                    m1i = F_normal_m,
-                    m2i = F_hormonal_m,
-                    sd1i = F_normal_sd,
-                    sd2i = F_hormonal_sd,
-                    n1i = F_normal_n,
-                    n2i = F_hormonal_n,
+                    m2i = F_normal_m,
+                    m1i = F_hormonal_m,
+                    sd2i = F_normal_sd,
+                    sd1i = F_hormonal_sd,
+                    n2i = F_normal_n,
+                    n1i = F_hormonal_n,
                     data = dat_pre,
 )
 
 dat_post <- escalc("ROM", 
-                  m1i = F_normal_m,
-                  m2i = F_hormonal_m,
-                  sd1i = F_normal_sd,
-                  sd2i = F_hormonal_sd,
-                  n1i = F_normal_n,
-                  n2i = F_hormonal_n,
+                  m2i = F_normal_m,
+                  m1i = F_hormonal_m,
+                  sd2i = F_normal_sd,
+                  sd1i = F_hormonal_sd,
+                  n2i = F_normal_n,
+                  n1i = F_hormonal_n,
                   data = dat_post,
 )
 
@@ -115,7 +115,7 @@ mod_pre <- rma.mv(yi, V = vi,
 summary(mod_pre)
 i2_ml(mod_pre)
 
-p1 <- orchard_plot(mod_pre, xlab = "lnRR (Pre-2005)", group = "species", g = FALSE) + ylim(-1.2, 0.5)
+p1 <- orchard_plot(mod_pre, xlab = "lnRR (Pre-2005)", group = "species", g = FALSE) + ylim(-0.5, 1.4)
 
 
 mod_post <- rma.mv(yi, V = vi, 
@@ -127,7 +127,7 @@ mod_post <- rma.mv(yi, V = vi,
 summary(mod_post)
 i2_ml(mod_post)
 
-p2 <- orchard_plot(mod_post, xlab = "lnRR (Post-2005)", group = "species", g = FALSE)  + ylim(-1.2, 0.5)
+p2 <- orchard_plot(mod_post, xlab = "lnRR (Post-2005)", group = "species", g = FALSE)  + ylim(-0.5, 1.4)
 
 p1/p2 +  plot_annotation(tag_levels = 'A')
 
