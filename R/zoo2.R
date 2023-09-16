@@ -19,6 +19,8 @@ pacman::p_load(tidyverse,
                here
 )
 
+library(apextra)
+
 ########################
 # data: life expectancy
 ########################
@@ -198,7 +200,7 @@ dat_fm_sn <- dat %>% filter(is.na(Female_Surgical_Mean) == FALSE,
          species = species,
          vertlife.species = vertlife.species,
          phylogeny = phylogeny,
-         category = "F hormonal/M normal"
+         category = "F surgical/M normal"
          )
 
 # getting effect size         
@@ -352,8 +354,8 @@ orchard_plot(mod_fm_nn, xlab = "lnRR (male surgical)", group = "species", g = FA
 
 rbind(
   dat_fm_ns[ , 7:12], # 1
-  dat_fm_sn[ , 7:12], # 2
-  dat_fm_hn[ , 7:12], # 3 
+  dat_fm_hn[ , 7:12], # 2 
+  dat_fm_sn[ , 7:12], # 3
   dat_fm_hs[ , 7:12], # 4
   dat_fm_ss[ , 7:12], # 5
   dat_fm_nn[ , 7:12]  # 6
@@ -369,7 +371,10 @@ dat_comb$category <- factor(dat_comb$category, levels = c( "F surgical/M surgica
                                                            "F surgical/M normal",
                                                            "F hormonal/M normal",
                                                            "F normal/M surgical",
-                                                           "F normal/M normal"))
+                                                           "F normal/M normal"),
+                            )
+
+
 
 VCV <- vcalc(vi, vertlife.species, rho = 0.5, data = dat_comb)
 
