@@ -2,7 +2,7 @@
 
 rm(list = ls())
 # pacakges
-remotes::install_github("GuangchuangYu/tidytree")
+#remotes::install_github("GuangchuangYu/tidytree")
 #if(!require("tidytree", quietly=TRUE))
 #devtools::install_version("tidytree", version = "0.4.4")
 
@@ -119,6 +119,8 @@ tdat2 <- subset(tdat, isTip)
 # this ordering matches the tree
 ordered_spp <- tdat2$label[order(tdat2$y, decreasing=TRUE)]
 
+
+
 #############################
 #  creating data to plot 
 #############################
@@ -139,13 +141,19 @@ pdat %>% mutate(lrr_surgical_m = (Male_Surgical_Mean/Male_None_Mean - 1)*100,
                 #) -> pdat
                 phylogeny = gsub(" ","_", vertlife.species)) -> pdat
 
-rownames(pdat) <- gsub(" ", "_", pdat$vertlife.species)
+
+# matching the tree ordering and data ordering
+pos_order <- match(ordered_spp, pdat$phylogeny)
+pdat <- pdat[pos_order, ]
+pdat$ordering <- seq(1:nrow(pdat))
+#rownames(pdat) <- gsub(" ", "_", pdat$vertlife.species)
 
 # reformat data to long format
-pdat <- pdat %>% select(species, vertlife.species, order, phylogeny, lrr_surgical_m, lrr_surgical_f,
+pdat <- pdat %>% select(species, vertlife.species, order, phylogeny, ordering,
+                        lrr_surgical_m, lrr_surgical_f,
                         lrr_hormonal_m, lrr_hormonal_f,
                         lrr_immunological_m, lrr_immunological_f)
-pdat$ordering <- seq(1:nrow(pdat))
+
 pdat_long <- pdat %>% pivot_longer(cols = c(lrr_surgical_m, lrr_surgical_f,
                                             lrr_hormonal_m, lrr_hormonal_f,
                                             lrr_immunological_m, lrr_immunological_f))

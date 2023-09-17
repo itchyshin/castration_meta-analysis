@@ -272,7 +272,7 @@ orchard_plot(mod_f_surg, xlab = "lnRR (female surgical)", group = "species", g =
 ########################
 # getting other dat
 
-# 
+#  male hormonal
 dat_m_horm <- dat %>% filter(is.na(Male_Hormonal_Mean) == FALSE, is.na(Male_None_Mean) == FALSE) %>% 
   mutate(M_control_m = Male_None_Mean,
          M_control_sd = sqrt(Male.None)*Male_None_SE,
@@ -307,6 +307,7 @@ dat_m_horm$phylogeny[1] <- "Aonyx_cinerea"
 
 #grep("Equus",colnames(cor_tree))
 
+# male immunological
 dat_m_immu <- dat %>% filter(is.na(Male_Immunological_Mean) == FALSE, 
     is.na(Male_None_Mean) == FALSE) %>%
   mutate(M_control_m = Male_None_Mean,
@@ -338,6 +339,7 @@ matched <- match((dat_m_immu$phylogeny), colnames(cor_tree))
 
 which(is.na(matched))
 
+# female immunological
 dat_f_immu <- dat %>% filter(is.na(Female_Immunological_Mean) == FALSE, 
     is.na(Female_None_Mean) == FALSE) %>%
   mutate(F_control_m = Female_None_Mean,

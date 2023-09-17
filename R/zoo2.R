@@ -627,4 +627,252 @@ orchard_plot(mod_comb_a, mod = "category",
             xlab = "lnRR (all)", group = "vertlife.species", 
             g = FALSE, angle = 45)
 
+##########################
+# adding more conditions 
+###########################
 
+# female immunological vs. male normal
+
+dat_fm_in <- dat %>% filter(is.na(Female_Immunological_Mean) == FALSE,
+                            is.na(Male_None_Mean) == FALSE) %>%
+  transmute(F_immunological_m = Female_Immunological_Mean,
+            F_immunological_sd = sqrt(Female.Immunological*Female_Immunological_SE),
+            F_immunological_n = Female.Immunological,
+            M_normal_m = Male_None_Mean,
+            M_normal_sd = sqrt(Male.None)*Male_None_SE,
+            M_normal_n = Male.None,
+            species = species,
+            vertlife.species = vertlife.species,
+            phylogeny = phylogeny,
+            category = "F immunological/M normal"
+  )
+
+# getting effect size         
+dat_fm_in <- escalc("ROM", 
+                    m1i = F_immunological_m,
+                    m2i = M_normal_m,
+                    sd1i = F_immunological_sd,
+                    sd2i = M_normal_sd,
+                    n1i = F_immunological_n,
+                    n2i = M_normal_n,
+                    data = dat_fm_in,
+)
+
+
+# female normal vs. male hormonal
+
+dat_fm_nh <- dat %>% filter(is.na(Female_None_Mean) == FALSE,
+                            is.na(Male_Hormonal_Mean) == FALSE) %>%
+  transmute(F_normal_m = Female_None_Mean,
+            F_normal_sd = sqrt(Female.None*Female_None_SE),
+            F_normal_n = Female.None,
+            M_hornomal_m = Male_Hormonal_Mean,
+            M_hornomal_sd = sqrt(Male.Hormonal)*Male_Hormonal_SE,
+            M_hornomal_n = Male.Hormonal,
+            species = species,
+            vertlife.species = vertlife.species,
+            phylogeny = phylogeny,
+            category = "F normal/M hornomal"
+  )
+
+# getting effect size         
+dat_fm_nh <- escalc("ROM", 
+                    m1i = F_normal_m,
+                    m2i = M_hornomal_m,
+                    sd1i = F_normal_sd,
+                    sd2i = M_hornomal_sd,
+                    n1i = F_normal_n,
+                    n2i = M_hornomal_n,
+                    data = dat_fm_nh,
+)
+
+# female normal vs. male immunological
+
+dat_fm_ni <- dat %>% filter(is.na(Female_None_Mean) == FALSE,
+                            is.na(Male_Immunological_Mean) == FALSE) %>%
+  transmute(F_normal_m = Female_None_Mean,
+            F_normal_sd = sqrt(Female.None*Female_None_SE),
+            F_normal_n = Female.None,
+            M_immunological_m = Male_Immunological_Mean,
+            M_immunological_sd = sqrt(Male.Immunological)*Male_Immunological_SE,
+            M_immunological_n = Male.Immunological,
+            species = species,
+            vertlife.species = vertlife.species,
+            phylogeny = phylogeny,
+            category = "F normal/M immunological"
+  )
+
+# getting effect size         
+dat_fm_ni <- escalc("ROM", 
+                    m1i = F_normal_m,
+                    m2i = M_immunological_m,
+                    sd1i = F_normal_sd,
+                    sd2i = M_immunological_sd,
+                    n1i = F_normal_n,
+                    n2i = M_immunological_n,
+                    data = dat_fm_ni,
+)
+
+# female hormonal vs. male hormonal
+
+dat_fm_hh <- dat %>% filter(is.na(Female_Hormonal_Mean) == FALSE,
+                            is.na(Male_Hormonal_Mean) == FALSE) %>%
+  transmute(F_hornomal_m = Female_Hormonal_Mean,
+            F_hornomal_sd = sqrt(Female.Hormonal*Female_Hormonal_SE),
+            F_hornomal_n = Female.Hormonal,
+            M_hornomal_m = Male_Hormonal_Mean,
+            M_hornomal_sd = sqrt(Male.Hormonal)*Male_Hormonal_SE,
+            M_hornomal_n = Male.Hormonal,
+            species = species,
+            vertlife.species = vertlife.species,
+            phylogeny = phylogeny,
+            category = "F hornomal/M hornomal"
+  )
+
+# getting effect size         
+dat_fm_hh <- escalc("ROM", 
+                    m1i = F_hornomal_m,
+                    m2i = M_hornomal_m,
+                    sd1i = F_hornomal_sd,
+                    sd2i = M_hornomal_sd,
+                    n1i = F_hornomal_n,
+                    n2i = M_hornomal_n,
+                    data = dat_fm_hh,
+)
+
+
+# female immunological vs. male immunological
+
+dat_fm_ii <- dat %>% filter(is.na(Female_Immunological_Mean) == FALSE,
+                    is.na(Male_Immunological_Mean) == FALSE) %>%
+  transmute(F_immunological_m = Female_Immunological_Mean,
+            F_immunological_sd = sqrt(Female.Immunological*Female_Immunological_SE),
+            F_immunological_n = Female.None,
+            M_immunological_m = Male_Immunological_Mean,
+            M_immunological_sd = sqrt(Male.Immunological)*Male_Immunological_SE,
+            M_immunological_n = Male.Immunological,
+            species = species,
+            vertlife.species = vertlife.species,
+            phylogeny = phylogeny,
+            category = "F immunological/M immunological"
+  )
+
+# dat_fm_ii effect size         
+dat_fm_ii <- escalc("ROM", 
+                    m1i = F_immunological_m,
+                    m2i = M_immunological_m,
+                    sd1i = F_immunological_sd,
+                    sd2i = M_immunological_sd,
+                    n1i = F_immunological_n,
+                    n2i = M_immunological_n,
+                    data = dat_fm_ii,
+)
+
+
+#
+
+rbind(
+  dat_fm_ns[ , 7:12], # 1
+  dat_fm_hn[ , 7:12], # 2 
+  dat_fm_sn[ , 7:12], # 3
+#  dat_fm_hs[ , 7:12], # 4
+  dat_fm_ss[ , 7:12], # 4
+  dat_fm_nn[ , 7:12],  # 5
+  dat_fm_nh[ , 7:12],  # 6
+  dat_fm_ni[ , 7:12],  # 7
+  dat_fm_hh[ , 7:12],  # 8
+  dat_fm_ii[ , 7:12]  # 9
+) -> dat_comb
+
+
+dat_comb$obs_id <- factor(1:nrow(dat_comb))
+
+# reordering cateogry
+
+dat_comb$category <- factor(dat_comb$category, levels = c("F immunological/M immunological",
+                                                           "F hornomal/M hornomal",
+                                                           "F surgical/M surgical",
+                                                           "F immunological/M normal",
+                                                           "F hormonal/M normal",  
+                                                           "F surgical/M normal",
+                                                           "F normal/M immunological",
+                                                           "F normal/M hormonal",
+                                                           "F normal/M surgical",
+                                                           "F normal/M normal"),
+                                                labels = c("F sterlized/M sterlized",
+                                                           "F sterlized/M sterlized",
+                                                           "F sterlized/M sterlized",
+                                                           "F sterlized/M normal",
+                                                           "F sterlized/M normal",  
+                                                           "F sterlized/M normal",
+                                                           "F normal/M sterlized",
+                                                           "F normal/M sterlized",
+                                                           "F normal/M sterlized",
+                                                           "F normal/M normal"),
+                             
+)
+
+
+VCV <- vcalc(vi, vertlife.species, rho = 0.5, data = dat_comb)
+
+
+mod_comb <- rma.mv(yi, V = VCV,
+                   mods = ~category - 1,
+                   random = list(
+                     ~1|vertlife.species,
+                     ~1|phylogeny,
+                     ~1|obs_id),
+                   R = list(phylogeny = cor_tree),
+                   data = dat_comb,
+                   control = list(optimizer = "Nelder-Mead"))
+summary(mod_comb)
+r2_ml(mod_comb)
+
+robust(mod_comb, cluster = vertlife.species)  
+
+orchard_plot(mod_comb, mod = "category",
+             xlab = "lnRR (all)", group = "vertlife.species", 
+             g = FALSE, angle = 45)
+
+res <- all_models(mod_comb, mod = "category")  
+
+
+####### 
+# absolute analyses
+
+# Aboslute analyses
+
+dat_comb <- dat_comb %>% mutate(
+  abs_yi = abs(yi),
+  abs_yi2 = folded_mu(yi, vi), 
+  abs_vi = folded_v(yi, vi))
+
+dat_comb[which(dat_comb$abs_yi == max(dat_comb$abs_yi)), ]
+
+#hist(log(dat_comb$abs_vi))
+
+
+# modeling
+
+VCVa <- vcalc(abs_vi, vertlife.species, rho = 0.5, data = dat_comb)
+
+mod_comb_a <- rma.mv(abs_yi, V = VCVa,
+                     mods = ~category - 1,
+                     random = list(
+                       ~1|vertlife.species,
+                       ~1|phylogeny,
+                       ~1|obs_id),
+                     R = list(phylogeny = cor_tree),
+                     data = dat_comb,
+                     control = list(optimizer = "Nelder-Mead"))
+summary(mod_comb_a)
+r2_ml(mod_comb_a)
+res2 <- all_models(mod_comb_a, mod = "category", type = "abs")
+
+robust(mod_comb_a, cluster = vertlife.species)  
+
+orchard_plot(mod_comb_a, mod = "category",
+             xlab = "lnRR (all)", group = "vertlife.species", 
+             g = FALSE, angle = 45)
+
+res2
