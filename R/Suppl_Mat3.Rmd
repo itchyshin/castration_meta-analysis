@@ -1,5 +1,5 @@
 ---
-title: "Castration, sterlization and con"
+title: "Castration, sterlization and con..."
 subtitle: "Michael Garratt, Christine Neyt, Michael Stout, José V. V. Isola, Jean-Michel Gaillard, Jean-François Lemaître, Malgorzata Lagisz, Johanna Stärk, (more people to add here) Fernando Colchero & Shinichi Nakagawa" 
 #authors: 
 date: "`r format(Sys.time(), '%d %B %Y')`"

@@ -16,7 +16,8 @@ pacman::p_load(tidyverse,
                clubSandwich,
                png,
                grid,
-               here
+               here,
+               cowplot
 )
 
 library(apextra)
@@ -95,17 +96,17 @@ dat_fm_ns <- escalc("ROM",
               )
 
 # modeling
-
-mod_fm_ns <- rma.mv(yi, V = vi, 
-                     random = list(
-                       ~1|species,
-                       ~1|phylogeny), 
-                     R = list(phylogeny = cor_tree), 
-                     data = dat_fm_ns)
-summary(mod_fm_ns)
-i2_ml(mod_fm_ns)
-
-orchard_plot(mod_fm_ns, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
+# 
+# mod_fm_ns <- rma.mv(yi, V = vi, 
+#                      random = list(
+#                        ~1|species,
+#                        ~1|phylogeny), 
+#                      R = list(phylogeny = cor_tree), 
+#                      data = dat_fm_ns)
+# summary(mod_fm_ns)
+# i2_ml(mod_fm_ns)
+# 
+# orchard_plot(mod_fm_ns, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
 
 # female surgical vs. male normal
 
@@ -136,16 +137,16 @@ dat_fm_sn <- escalc("ROM",
 
 # modeling
 
-mod_fm_sn <- rma.mv(yi, V = vi, 
-                     random = list(
-                       ~1|species,
-                       ~1|phylogeny), 
-                     R = list(phylogeny = cor_tree), 
-                     data = dat_fm_sn)
-summary(mod_fm_sn)
-i2_ml(mod_fm_sn)
-
-orchard_plot(mod_fm_sn, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
+# mod_fm_sn <- rma.mv(yi, V = vi, 
+#                      random = list(
+#                        ~1|species,
+#                        ~1|phylogeny), 
+#                      R = list(phylogeny = cor_tree), 
+#                      data = dat_fm_sn)
+# summary(mod_fm_sn)
+# i2_ml(mod_fm_sn)
+# 
+# orchard_plot(mod_fm_sn, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
 
 # female hormonal vs. male normal
 
@@ -175,17 +176,17 @@ dat_fm_hn <- escalc("ROM",
               )
 
 # modeling
-
-mod_fm_hn <- rma.mv(yi, V = vi, 
-                     random = list(
-                       ~1|species,
-                       ~1|phylogeny), 
-                     R = list(phylogeny = cor_tree), 
-                     data = dat_fm_hn)
-summary(mod_fm_hn)
-i2_ml(mod_fm_hn)
-
-orchard_plot(mod_fm_hn, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
+# 
+# mod_fm_hn <- rma.mv(yi, V = vi, 
+#                      random = list(
+#                        ~1|species,
+#                        ~1|phylogeny), 
+#                      R = list(phylogeny = cor_tree), 
+#                      data = dat_fm_hn)
+# summary(mod_fm_hn)
+# i2_ml(mod_fm_hn)
+# 
+# orchard_plot(mod_fm_hn, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
 
 # female surgical vs. male normal
 
@@ -215,17 +216,17 @@ dat_fm_sn <- escalc("ROM",
               )
 
 # modeling
-
-mod_fm_sn <- rma.mv(yi, V = vi, 
-                     random = list(
-                       ~1|species,
-                       ~1|phylogeny), 
-                     R = list(phylogeny = cor_tree), 
-                     data = dat_fm_sn)
-summary(mod_fm_sn)
-i2_ml(mod_fm_sn)
-
-orchard_plot(mod_fm_sn, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
+# 
+# mod_fm_sn <- rma.mv(yi, V = vi, 
+#                      random = list(
+#                        ~1|species,
+#                        ~1|phylogeny), 
+#                      R = list(phylogeny = cor_tree), 
+#                      data = dat_fm_sn)
+# summary(mod_fm_sn)
+# i2_ml(mod_fm_sn)
+# 
+# orchard_plot(mod_fm_sn, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
 
 # female hormonal vs. male surgical
 
@@ -256,16 +257,16 @@ dat_fm_hs <- escalc("ROM",
 
 # modeling
 
-mod_fm_hs <- rma.mv(yi, V = vi, 
-                     random = list(
-                       ~1|species,
-                       ~1|phylogeny), 
-                     R = list(phylogeny = cor_tree), 
-                     data = dat_fm_hs)
-summary(mod_fm_hs)
-i2_ml(mod_fm_hs)
-
-orchard_plot(mod_fm_hs, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
+# mod_fm_hs <- rma.mv(yi, V = vi, 
+#                      random = list(
+#                        ~1|species,
+#                        ~1|phylogeny), 
+#                      R = list(phylogeny = cor_tree), 
+#                      data = dat_fm_hs)
+# summary(mod_fm_hs)
+# i2_ml(mod_fm_hs)
+# 
+# orchard_plot(mod_fm_hs, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
 
 # female surgical vs. male surgical
 
@@ -294,18 +295,18 @@ dat_fm_ss <- escalc("ROM",
                             data = dat_fm_ss,
                             )
 
-# modeling
-
-mod_fm_ss <- rma.mv(yi, V = vi, 
-                                         random = list(
-                                             ~1|species,
-                                             ~1|phylogeny), 
-                                         R = list(phylogeny = cor_tree), 
-                                         data = dat_fm_ss)
-summary(mod_fm_ss)
-i2_ml(mod_fm_ss)
-
-orchard_plot(mod_fm_ss, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
+# # modeling
+# 
+# mod_fm_ss <- rma.mv(yi, V = vi, 
+#                                          random = list(
+#                                              ~1|species,
+#                                              ~1|phylogeny), 
+#                                          R = list(phylogeny = cor_tree), 
+#                                          data = dat_fm_ss)
+# summary(mod_fm_ss)
+# i2_ml(mod_fm_ss)
+# 
+# orchard_plot(mod_fm_ss, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
 
 # female normal vs. male normal
 
@@ -336,68 +337,68 @@ dat_fm_nn <- escalc("ROM",
 
 # modeling
 
-mod_fm_nn <- rma.mv(yi, V = vi, 
-                                         random = list(
-                                             ~1|species,
-                                             ~1|phylogeny), 
-                                         R = list(phylogeny = cor_tree), 
-                                         data = dat_fm_nn)
-summary(mod_fm_nn)
-i2_ml(mod_fm_nn)
-
-orchard_plot(mod_fm_nn, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
-
-
-# merging all data
-
-
-
-rbind(
-  dat_fm_ns[ , 7:12], # 1
-  dat_fm_hn[ , 7:12], # 2 
-  dat_fm_sn[ , 7:12], # 3
-  dat_fm_hs[ , 7:12], # 4
-  dat_fm_ss[ , 7:12], # 5
-  dat_fm_nn[ , 7:12]  # 6
-) -> dat_comb
-
-
-dat_comb$obs_id <- factor(1:nrow(dat_comb))
-
-# reordering cateogry
-
-dat_comb$category <- factor(dat_comb$category, levels = c( "F surgical/M surgical",
-                                                           "F hormonal/M surgical",  
-                                                           "F surgical/M normal",
-                                                           "F hormonal/M normal",
-                                                           "F normal/M surgical",
-                                                           "F normal/M normal"),
-                            )
-
-
-
-VCV <- vcalc(vi, vertlife.species, rho = 0.5, data = dat_comb)
-
-
-mod_comb <- rma.mv(yi, V = VCV,
-                   mods = ~category - 1,
-                     random = list(
-                       ~1|vertlife.species,
-                       ~1|phylogeny,
-                       ~1|obs_id),
-                     R = list(phylogeny = cor_tree),
-                     data = dat_comb,
-                     control = list(optimizer = "Nelder-Mead"))
-summary(mod_comb)
-r2_ml(mod_comb)
-
-robust(mod_comb, cluster = vertlife.species)  
-
-orchard_plot(mod_comb, mod = "category",
-            xlab = "lnRR (all)", group = "vertlife.species", 
-            g = FALSE, angle = 45)
-
-res <- all_models(mod_comb, mod = "category")  
+# mod_fm_nn <- rma.mv(yi, V = vi, 
+#                                          random = list(
+#                                              ~1|species,
+#                                              ~1|phylogeny), 
+#                                          R = list(phylogeny = cor_tree), 
+#                                          data = dat_fm_nn)
+# summary(mod_fm_nn)
+# i2_ml(mod_fm_nn)
+# 
+# orchard_plot(mod_fm_nn, xlab = "lnRR (male surgical)", group = "species", g = FALSE)
+# 
+# 
+# # merging all data
+# 
+# 
+# 
+# rbind(
+#   dat_fm_ns[ , 7:12], # 1
+#   dat_fm_hn[ , 7:12], # 2 
+#   dat_fm_sn[ , 7:12], # 3
+#   dat_fm_hs[ , 7:12], # 4
+#   dat_fm_ss[ , 7:12], # 5
+#   dat_fm_nn[ , 7:12]  # 6
+# ) -> dat_comb
+# 
+# 
+# dat_comb$obs_id <- factor(1:nrow(dat_comb))
+# 
+# # reordering cateogry
+# 
+# dat_comb$category <- factor(dat_comb$category, levels = c( "F surgical/M surgical",
+#                                                            "F hormonal/M surgical",  
+#                                                            "F surgical/M normal",
+#                                                            "F hormonal/M normal",
+#                                                            "F normal/M surgical",
+#                                                            "F normal/M normal"),
+#                             )
+# 
+# 
+# 
+# VCV <- vcalc(vi, vertlife.species, rho = 0.5, data = dat_comb)
+# 
+# 
+# mod_comb <- rma.mv(yi, V = VCV,
+#                    mods = ~category - 1,
+#                      random = list(
+#                        ~1|vertlife.species,
+#                        ~1|phylogeny,
+#                        ~1|obs_id),
+#                      R = list(phylogeny = cor_tree),
+#                      data = dat_comb,
+#                      control = list(optimizer = "Nelder-Mead"))
+# summary(mod_comb)
+# r2_ml(mod_comb)
+# 
+# robust(mod_comb, cluster = vertlife.species)  
+# 
+# orchard_plot(mod_comb, mod = "category",
+#             xlab = "lnRR (all)", group = "vertlife.species", 
+#             g = FALSE, angle = 45)
+# 
+# res <- all_models(mod_comb, mod = "category")  
 
 # creating a table to show contrasts between categories
 
@@ -593,39 +594,39 @@ folded_v <-function(mean, variance){
 } 
 
 # Aboslute analyses
-
-dat_comb <- dat_comb %>% mutate(
-                      abs_yi = abs(yi),
-                      abs_yi2 = folded_mu(yi, vi), 
-                      abs_vi = folded_v(yi, vi))
-
-dat_comb[which(dat_comb$abs_yi == max(dat_comb$abs_yi)), ]
+# 
+# dat_comb <- dat_comb %>% mutate(
+#                       abs_yi = abs(yi),
+#                       abs_yi2 = folded_mu(yi, vi), 
+#                       abs_vi = folded_v(yi, vi))
+# 
+# dat_comb[which(dat_comb$abs_yi == max(dat_comb$abs_yi)), ]
 
 #hist(log(dat_comb$abs_vi))
 
 
 # modeling
 
-VCVa <- vcalc(abs_vi, vertlife.species, rho = 0.5, data = dat_comb)
-
-mod_comb_a <- rma.mv(abs_yi, V = VCVa,
-                   mods = ~category - 1,
-                     random = list(
-                       ~1|vertlife.species,
-                       ~1|phylogeny,
-                       ~1|obs_id),
-                     R = list(phylogeny = cor_tree),
-                     data = dat_comb,
-                     control = list(optimizer = "Nelder-Mead"))
-summary(mod_comb_a)
-r2_ml(mod_comb_a)
-res2 <- all_models(mod_comb_a, mod = "category", type = "abs")
-
-robust(mod_comb_a, cluster = vertlife.species)  
-
-orchard_plot(mod_comb_a, mod = "category",
-            xlab = "lnRR (all)", group = "vertlife.species", 
-            g = FALSE, angle = 45)
+# VCVa <- vcalc(abs_vi, vertlife.species, rho = 0.5, data = dat_comb)
+# 
+# mod_comb_a <- rma.mv(abs_yi, V = VCVa,
+#                    mods = ~category - 1,
+#                      random = list(
+#                        ~1|vertlife.species,
+#                        ~1|phylogeny,
+#                        ~1|obs_id),
+#                      R = list(phylogeny = cor_tree),
+#                      data = dat_comb,
+#                      control = list(optimizer = "Nelder-Mead"))
+# summary(mod_comb_a)
+# r2_ml(mod_comb_a)
+# res2 <- all_models(mod_comb_a, mod = "category", type = "abs")
+# 
+# robust(mod_comb_a, cluster = vertlife.species)  
+# 
+# orchard_plot(mod_comb_a, mod = "category",
+#             xlab = "lnRR (all)", group = "vertlife.species", 
+#             g = FALSE, angle = 45)
 
 ##########################
 # adding more conditions 
@@ -830,7 +831,7 @@ r2_ml(mod_comb)
 
 robust(mod_comb, cluster = vertlife.species)  
 
-orchard_plot(mod_comb, mod = "category",
+p_sexdiff <- orchard_plot(mod_comb, mod = "category",
              xlab = "lnRR (all)", group = "vertlife.species", 
              g = FALSE, angle = 45)
 
@@ -867,12 +868,21 @@ mod_comb_a <- rma.mv(abs_yi, V = VCVa,
                      control = list(optimizer = "Nelder-Mead"))
 summary(mod_comb_a)
 r2_ml(mod_comb_a)
-res2 <- all_models(mod_comb_a, mod = "category", type = "abs")
+#res2 <- all_models(mod_comb_a, mod = "category", type = "abs")
 
 robust(mod_comb_a, cluster = vertlife.species)  
 
-orchard_plot(mod_comb_a, mod = "category",
+p_abs <- orchard_plot(mod_comb_a, mod = "category",
              xlab = "lnRR (all)", group = "vertlife.species", 
              g = FALSE, angle = 45)
 
-res2
+#res2
+
+# putting figs together
+
+library(cowplot)
+plot_grid(p_phylo2) / (p_sexdiff + p_abs) + 
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(heights = c(1.5,1.0))
+
+

@@ -20,7 +20,7 @@ library(here)
 
 # Plot layout:
 library(patchwork)
-
+library(cowplot)
 
 dat_full <- read_csv(here("data", "zoo.csv"), na = c("", "NA"))
 
@@ -186,50 +186,8 @@ pdat_long$category <- factor(pdat_long$category, levels = rev(c("F sterilized/M 
                                     "F normal/M sterilized",
                                     "F normal/M normal")))
 
-# ggplot(pdat,  aes(x = rom_fnorm_mnorm, reorder(vertlife.species, -ordering))) +
-#   ggplot2::geom_errorbarh(aes(xmin = rom_fnorm_mnorm, xmax = 0, #colour = posneg
-#                               ), 
-#                           height = 0, show.legend = TRUE, size = 1, 
-#                           alpha = 0.8, #position =position_dodge(width = 0.75)
-#   ) 
 
-p2 <- ggplot(pdat_long,  
-             aes(x = value, reorder(vertlife.species, -ordering))) +
-  ggplot2::geom_errorbarh(aes(xmin = min_value, xmax = max_value, colour = sex_diff), 
-                          height = 0, show.legend = TRUE, size = 1, 
-                          alpha = 0.8 #, position =position_dodge(width = 0.75) 
-                          ) +
-  #geom_segment(linewidth = 1, alpha = 0.8, position =position_dodge(width = 0.95)) +
-  facet_wrap(~ category, ncol = 4, #scales = "free_x"
-  ) +
-  xlim(-80, 80) + 
-  #facet_wrap(sex~type, ncol = 6) +
-  #scale_color_manual(values = c("#FF9933", "#336699", NA), name = "") +
-  scale_color_manual(values = c("#CC6677", "#88CCEE")) +
-  scale_colour_discrete(na.translate = F) +
-  #scale_color_discrete(name = "Sex difference",
-  #                    labels = c("M live longer", "M live longer")) +
-  theme_bw() +
-  theme(axis.text.y = element_blank(),
-        axis.text.x = element_text(size = 7),
-        axis.ticks  = element_blank(),
-        strip.text = element_text(face = "bold"),
-        panel.grid.minor.x = element_blank()) +
-  #guides(colour = colour) +
-  theme(legend.position =  c(0.92, 0.92)) +
-  labs(colour = "Sex difference") +
-  xlab("Ratio: female/male (%)") +
-  ylab("") 
-
-p2
-
-
-
-
-
-
-
-
+# doing tree figure
 
 # # use getMRCA() to obtain common ancestor nodes to position the order silhouttes
 tree.tibble <- tidytree::as_tibble(tree)
@@ -273,3 +231,107 @@ pdat %>% select(phylogeny, order) -> odat
 p0 <- p %<+% odat + 
   geom_tippoint(aes(color= order), size = 0.5) + xlim_expand(c(0,170), panel = "Tree") + 
   guides(color="none") 
+
+# Image directory
+imgdir <- "phylopics/"
+
+p1 = p0 +
+  geom_image(
+    x = 170,
+    y = 148,
+    image = paste0(
+      imgdir,
+      "Artiodactyla_PhyloPic.8b567be8.An-Ignorant-Atheist.Antilopinae.png"
+    ),
+    size = 0.045
+  ) +
+  geom_image(
+    x = 170,
+    y = 116,
+    image = paste0(
+      imgdir,
+      "Perissodactlyla_PhyloPic.071ee517.David-Orr.Equus-ferus-caballus.png"
+    ),
+    size = 0.05
+  ) +
+  geom_image(
+    x = 170,
+    y = 100,
+    image = paste0(
+      imgdir,
+      "Carnivora_PhyloPic.34e482b4.An-Ignorant-Atheist.Panthera.png"
+    ),
+    size = 0.05
+  ) +
+  geom_image(
+    x = 170,
+    y = 80,
+    image = paste0(
+      imgdir,
+      "Chrioptera_PhyloPic.e7da460a.Margot-Michaud.Chiroptera_Eptesicus_Eptesicus-fuscus_Vespertilio-Noctilio_Vespertilionidae_Vespertilioniformes_Vespertilioninae_Vespertilionoidea.png"
+    ),
+    size = 0.05
+  ) +
+  geom_image(
+    x = 170,
+    y = 48,
+    image = paste0(
+      imgdir,
+      "Primates_PhyloPic.071db0d0.Margot-Michaud.Papio_Papio-anubis.png"
+    ),
+    size = 0.05
+  ) +
+  geom_image(
+    x = 170,
+    y = 19,
+    image = paste0(
+      imgdir,
+      "Rodentia_PhyloPic.570c7d9e.Alexandra-van-der-Geer.Rattus_Rattus-exulans.png"
+    ),
+    size = 0.06
+  ) +
+  geom_image(
+    x = 170,
+    y = 7,
+    image = paste0(
+      imgdir,
+      "PhyloPic.b62bab6e.An-Ignorant-Atheist.Macropus-Macropus.png"
+    ),
+    size = 0.05
+  )
+
+
+p2 <- ggplot(pdat_long,  
+             aes(x = value, reorder(vertlife.species, -ordering))) +
+  ggplot2::geom_errorbarh(aes(xmin = min_value, xmax = max_value, colour = sex_diff), 
+                          height = 0, show.legend = TRUE, size = 1, 
+                          alpha = 0.8 #, position =position_dodge(width = 0.75) 
+                          ) +
+  #geom_segment(linewidth = 1, alpha = 0.8, position =position_dodge(width = 0.95)) +
+  facet_wrap(~ category, ncol = 4, #scales = "free_x"
+  ) +
+  xlim(-80, 80) + 
+  scale_color_manual(values = c("#CC6677", "#88CCEE"), na.translate = F) +
+  #scale_colour_discrete(na.translate = F) +
+  #scale_color_manual(values = c("#CC6677", "#88CCEE")) +
+  #facet_wrap(sex~type, ncol = 6) +
+  #scale_color_manual(values = c("#FF9933", "#336699", NA), name = "") 
+  #scale_color_discrete(name = "Sex difference",
+  #                    labels = c("M live longer", "M live longer")) +
+  theme_bw() +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 7),
+        axis.ticks  = element_blank(),
+        strip.text = element_text(face = "bold"),
+        panel.grid.minor.x = element_blank()) +
+  #guides(colour = colour) +
+  theme(legend.position =  c(0.9, 0.92)) +
+  labs(colour = "Sex difference") +
+  xlab("Ratio: female/male (%)") +
+  theme(legend.key.size = unit(0.25, 'cm')) + 
+  ylab("") 
+
+p2
+
+p_phylo2 <- p1 + p2
+

@@ -18,7 +18,8 @@ pacman::p_load(tidyverse,
                clubSandwich,
                png,
                grid,
-               here
+               here,
+               cowplot
 )
 
 ########################
@@ -412,9 +413,9 @@ setdiff(tree$tip.label, unique(dat_all$phylogeny))
 
 # saving data_all
 
-dat_all %>% mutate(effect = "lifespan") -> dat_all
+#dat_all %>% mutate(effect = "lifespan") -> dat_all
 
-saveRDS(dat_all, here("Rdata", "lifespan_all.RDS"))
+#saveRDS(dat_all, here("Rdata", "lifespan_all.RDS"))
 
 dat_all <- readRDS(here("Rdata", "lifespan_all.RDS"))
 
@@ -439,7 +440,7 @@ orchard_plot(mod_all,xlab = "lnRR (all)", group = "species", g = FALSE)
 
 # sex
 
-mod_all1 <- rma.mv(yi, V = vi,
+mod_all1 <- rma.mv(yi, V = VCV,
                    mod = ~ sex,
                   random = list(
                     ~1|species,
@@ -449,13 +450,33 @@ mod_all1 <- rma.mv(yi, V = vi,
                   data = dat_all)
 summary(mod_all1)
 
+
+mod_all1b <- rma.mv(yi, V = VCV,
+                   mod = ~ sex - 1,
+                   random = list(
+                     ~1|species,
+                     ~1|phylogeny,
+                     ~1|obs_id),
+                   R = list(phylogeny = cor_tree),
+                   data = dat_all)
+summary(mod_all1b)
+
+r2_ml(mod_all1)
+
 orchard_plot(mod_all1, mod = "sex",
              xlab = "lnRR (all)", group = "species", g = FALSE)
 
+# TODO - contrast...
+
 # types
 
-mod_all2 <- rma.mv(yi, V = vi,
-                   mod = ~ type-1,
+dat_all$type <- factor(dat_all$type, 
+                   levels = rev(c("surgical", "hormonal", "immunological")))
+
+
+
+mod_all2 <- rma.mv(yi, V = VCV,
+                   mod = ~ type,
                    random = list(
                      ~1|species,
                      ~1|phylogeny,
@@ -464,12 +485,27 @@ mod_all2 <- rma.mv(yi, V = vi,
                    data = dat_all)
 summary(mod_all2)
 
+
+mod_all2b <- rma.mv(yi, V = VCV,
+                 mod = ~ type-1,
+                 random = list(
+                   ~1|species,
+                   ~1|phylogeny,
+                   ~1|obs_id),
+                 R = list(phylogeny = cor_tree),
+                 data = dat_all)
+
+summary(mod_all2b)
+
+r2_ml(mod_all2)
+
+
 orchard_plot(mod_all2, mod = "type",
              xlab = "lnRR (all)", group = "species", g = FALSE, angle = 90)
 
 # interaction
 
-mod_all3 <- rma.mv(yi, V = vi,
+mod_all3 <- rma.mv(yi, V = VCV,
                    mod = ~ sex_type-1,
                    random = list(
                      ~1|species,
@@ -479,37 +515,47 @@ mod_all3 <- rma.mv(yi, V = vi,
                    data = dat_all)
 summary(mod_all3)
 
+r2_ml(mod_all3)
+
 orchard_plot(mod_all3, mod = "sex_type",
              xlab = "lnRR (all)", group = "species", g = FALSE, angle =45)
 
-#########
 
-# there is an outliner
-# ring-talied possioms
-dat_all[which(dat_all$yi == max(dat_all$yi)), "species"]
-#[1] "Pseudocheirus peregrinus"
+# Creating Fig 1
 
-# extra
+main <- mod_results(mod_all, group = "species")
+sex_diff <- mod_results(mod_all1, mod = "sex", group = "species")
 
-dat_all$yi[dat_all$species == "Pseudocheirus peregrinus"]
+combined <- submerge(sex_diff, main)
+
+combo <- orchard_plot(combined,
+                      group = "species", 
+                      xlab = "log response ratio (lnRR)") +
+  scale_colour_manual(values = rev(c("#999999", "#88CCEE", "#CC6677"))) +
+  scale_fill_manual(values = rev(c("#999999", "#88CCEE", "#CC6677")))
 
 
-# exclusing outlier
+combo
 
-dat_all2 <- dat_all[-which(dat_all$yi == max(dat_all$yi)), ]
 
-mod_all2 <- rma.mv(yi, V = vi, 
-                      random = list(
-                        ~1|species,
-                        ~1|phylogeny,
-                        ~1|obs_id),
-                      R = list(phylogeny = cor_tree),
-                      data = dat_all2)
-summary(mod_all2)
-i2_ml(mod_all2)
 
-orchard_plot(mod_all2, xlab = "lnRR (all)", group = "species",  g = FALSE)
+type_diff <- orchard_plot(mod_all2, mod = "type",
+             xlab = "lnRR (all)", group = "species", g = FALSE, angle = 90)+
+  scale_colour_manual(values = rev(c("#117733",  "#332288", "#DDCC77"))) +
+  scale_fill_manual(values = rev(c("#117733",  "#332288", "#DDCC77")))
 
+type_diff
+# "#117733",  "#332288", "#DDCC77" "#AA4499"
+library(cowplot)
+plot_grid(p_phylo) / (combo + type_diff) + 
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(heights = c(1.5,1.0))
+
+#############
+#############
+# NOT RUN
+#############
+#############
 
 ###################################
 
