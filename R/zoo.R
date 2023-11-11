@@ -534,18 +534,21 @@ combo <- orchard_plot(combined,
   scale_colour_manual(values = rev(c("#999999", "#88CCEE", "#CC6677"))) +
   scale_fill_manual(values = rev(c("#999999", "#88CCEE", "#CC6677")))
 
-
-combo
-
+#combo
 
 
 type_diff <- orchard_plot(mod_all2, mod = "type",
-             xlab = "lnRR (all)", group = "species", g = FALSE, angle = 90)+
+             xlab = "log response ratio (lnRR)", group = "species", g = FALSE, angle = 90)+
   scale_colour_manual(values = rev(c("#117733",  "#332288", "#DDCC77"))) +
   scale_fill_manual(values = rev(c("#117733",  "#332288", "#DDCC77")))
 
-type_diff
+#type_diff
 # "#117733",  "#332288", "#DDCC77" "#AA4499"
+
+###################
+## Figure 1
+###################
+
 library(cowplot)
 plot_grid(p_phylo) / (combo + type_diff) + 
   plot_annotation(tag_levels = 'A') + 

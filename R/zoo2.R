@@ -832,7 +832,7 @@ r2_ml(mod_comb)
 robust(mod_comb, cluster = vertlife.species)  
 
 p_sexdiff <- orchard_plot(mod_comb, mod = "category",
-             xlab = "lnRR (all)", group = "vertlife.species", 
+             xlab = "log response ratio (lnRR)", group = "vertlife.species", 
              g = FALSE, angle = 45)
 
 res <- all_models(mod_comb, mod = "category")  
@@ -873,12 +873,17 @@ r2_ml(mod_comb_a)
 robust(mod_comb_a, cluster = vertlife.species)  
 
 p_abs <- orchard_plot(mod_comb_a, mod = "category",
-             xlab = "lnRR (all)", group = "vertlife.species", 
+             xlab = "absolute log response ratio (lnRR)", group = "vertlife.species", 
              g = FALSE, angle = 45)
 
 #res2
 
 # putting figs together
+
+
+###################
+## Figure 4
+###################
 
 library(cowplot)
 plot_grid(p_phylo2) / (p_sexdiff + p_abs) + 

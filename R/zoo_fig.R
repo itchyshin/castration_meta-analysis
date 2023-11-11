@@ -330,7 +330,7 @@ p2 <- ggplot(pdat_long,
   #guides(colour = colour) +
   theme(legend.position =  c(0.88, 0.1)) +
   #labs(x = "lnRR (effect size)", y = "", ) +
-  xlab("Ratio: castration/control (%)") +
+  xlab("Ratio: sterilization/control (%)") +
   ylab("") 
 
 #p2
