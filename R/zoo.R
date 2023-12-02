@@ -79,7 +79,6 @@ setdiff(tree$tip.label, gsub(" ","_", dat$species))
 # "Neofelis_nebulosa" - 
 
 # creating spp
-
 dat$spp <- dat$species
 
 dat$spp[dat$spp == "Aonyx cinereus"] <- "Aonyx cinerea"

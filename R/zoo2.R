@@ -42,6 +42,7 @@ tax <- read.csv(here("data", "vertlife_taxonomy_translation_table.csv"))
 
 dat_full %>% left_join(tax, by = c("species" = "zims.species")) -> dat_full
 
+# talking out species with no data (Pseudocheirus peregrinus = likely to be mistaks in data)
 dat_full %>% filter(species != "Chrysocyon brachyurus" &
                     species != "Crocuta crocuta" &
                     species != "Neofelis nebulosa" &
@@ -776,13 +777,13 @@ rbind(
   dat_fm_ns[ , 7:12], # 1
   dat_fm_hn[ , 7:12], # 2 
   dat_fm_sn[ , 7:12], # 3
-#  dat_fm_hs[ , 7:12], # 4
   dat_fm_ss[ , 7:12], # 4
   dat_fm_nn[ , 7:12],  # 5
   dat_fm_nh[ , 7:12],  # 6
   dat_fm_ni[ , 7:12],  # 7
-  dat_fm_hh[ , 7:12],  # 8
-  dat_fm_ii[ , 7:12]  # 9
+  dat_fm_in[ , 7:12], # 8
+  dat_fm_hh[ , 7:12], # 9
+  dat_fm_ii[ , 7:12]  # 10
 ) -> dat_comb
 
 
