@@ -197,7 +197,7 @@ for (i in ord) {
 }
 
 
-tree <- as.ultrametric(tree)
+#tree <- as.ultrametric(tree)
 
 p <-
   ggtree(
